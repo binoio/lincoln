@@ -259,13 +259,11 @@ final class TunnelSupervisorTests: XCTestCase {
         XCTAssertTrue(launcher.last!.script.contains("ControlPath=/tmp/lincoln-tests/sockets/lincoln-alice@h:22"))
     }
 
-    func testOpenSessionSharesMaster() async {
-        socket.running[socketPath] = 1
+    func testSessionCommandLineSharesMaster() async {
+        XCTAssertNil(supervisor.sessionCommandLine(), "unknown until the control path is resolved")
         await supervisor.poll()
-        supervisor.openSession()
-        XCTAssertEqual(launcher.last?.name, "Gateway-session")
-        XCTAssertTrue(launcher.last!.script.contains("exec /usr/bin/ssh -o ControlPath=\(socketPath) -- tg"))
         XCTAssertEqual(supervisor.sessionCommandLine(), "/usr/bin/ssh -o ControlPath=\(socketPath) -- tg")
+        XCTAssertTrue(launcher.launches.isEmpty, "copying a command never opens Terminal")
     }
 
     func testEditingInvalidatesResolvedPath() async {

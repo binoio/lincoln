@@ -243,10 +243,6 @@ private struct TunnelMenuItems: View {
         manager.selectedSupervisor?.state.isActive == true
     }
 
-    private var selectedIsConnected: Bool {
-        manager.selectedSupervisor?.state.isConnected == true
-    }
-
     var body: some View {
         Button(selectedIsActive ? "Disconnect" : "Connect") {
             if let id = manager.selectedTunnelID { manager.toggle(id: id) }
@@ -254,11 +250,14 @@ private struct TunnelMenuItems: View {
         .keyboardShortcut("t", modifiers: .command)
         .disabled(manager.selectedTunnelID == nil)
 
-        Button("Open Terminal Session") {
-            manager.selectedSupervisor?.openSession()
+        Button("Copy ssh Command") {
+            if let command = manager.selectedSupervisor?.sessionCommandLine() {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(command, forType: .string)
+            }
         }
-        .keyboardShortcut("o", modifiers: [.command, .shift])
-        .disabled(!selectedIsConnected)
+        .keyboardShortcut("c", modifiers: [.command, .shift])
+        .disabled(manager.selectedSupervisor?.sessionCommandLine() == nil)
 
         Divider()
 

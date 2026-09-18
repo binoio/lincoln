@@ -57,6 +57,13 @@ struct TunnelEditorView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    if let session = supervisor.sessionCommandLine() {
+                        LabeledContent("Terminal session:") {
+                            Text(session)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                        }
+                    }
                     if let mode = supervisor.lastLaunchMode {
                         LabeledContent("Launched:") {
                             Text(mode.description)
