@@ -10,8 +10,8 @@ enum TunnelStateStyle {
     static func tintColor(for state: TunnelState) -> Color {
         switch state {
         case .connected: return .green
-        case .connecting, .reconnecting, .restarting, .disconnecting: return .orange
-        case .waitingForInput: return .purple
+        case .connecting, .disconnecting: return .orange
+        case .dropped: return .orange
         case .failed: return .red
         case .idle: return .gray
         }
@@ -20,8 +20,8 @@ enum TunnelStateStyle {
     static func systemImageName(for state: TunnelState) -> String {
         switch state {
         case .connected: return "checkmark.circle.fill"
-        case .connecting, .reconnecting, .restarting, .disconnecting: return "arrow.triangle.2.circlepath.circle.fill"
-        case .waitingForInput: return "questionmark.circle.fill"
+        case .connecting, .disconnecting: return "arrow.triangle.2.circlepath.circle.fill"
+        case .dropped: return "exclamationmark.triangle.fill"
         case .failed: return "xmark.octagon.fill"
         case .idle: return "circle"
         }

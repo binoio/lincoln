@@ -3,8 +3,8 @@
 //  Lincoln
 //
 //  Owns the tunnel list and one supervisor per tunnel, persists every change
-//  through TunnelStore, restores the desired state at launch and fans out
-//  network/power events.
+//  through TunnelStore, polls the control sockets, and at launch adopts
+//  masters that are already running (started by Lincoln or by hand).
 //
 
 import Foundation
@@ -23,41 +23,43 @@ final class TunnelManager: ObservableObject {
     let store: TunnelStore
     let settings: SettingsManager
     let environment: SSHEnvironmentProviding
-    private let processFactory: TunnelProcessFactory
+    private let launcher: TerminalLaunching
+    private let socket: ControlSocketChecking
     private let notifier: Notifying?
-    private let reconciler: StaleProcessReconciler
-    private let policy: ReconnectPolicy
-    private let scheduler: BackoffScheduler
     private let configParser: SSHConfigParser
+    private let stateDirectory: URL
     private var cancellables = Set<AnyCancellable>()
+    private var pollTimer: Timer?
+
+    /// Seconds between `ssh -O check` rounds; faster while something connects.
+    var idlePollInterval: TimeInterval = 5
+    var connectingPollInterval: TimeInterval = 1
 
     init(
         store: TunnelStore,
         settings: SettingsManager,
         environment: SSHEnvironmentProviding,
-        processFactory: TunnelProcessFactory,
+        launcher: TerminalLaunching,
+        socket: ControlSocketChecking,
         notifier: Notifying? = nil,
-        reconciler: StaleProcessReconciler = StaleProcessReconciler(),
-        policy: ReconnectPolicy = .default,
-        scheduler: BackoffScheduler? = nil,
-        configParser: SSHConfigParser = SSHConfigParser()
+        configParser: SSHConfigParser = SSHConfigParser(),
+        stateDirectory: URL? = nil
     ) {
         self.store = store
         self.settings = settings
         self.environment = environment
-        self.processFactory = processFactory
+        self.launcher = launcher
+        self.socket = socket
         self.notifier = notifier
-        self.reconciler = reconciler
-        self.policy = policy
-        self.scheduler = scheduler ?? TunnelSupervisor.dispatchScheduler
         self.configParser = configParser
+        self.stateDirectory = stateDirectory ?? store.directoryURL.appendingPathComponent("state", isDirectory: true)
     }
 
     // MARK: - Lifecycle
 
-    /// Loads the store, stops orphaned ssh processes from an earlier Lincoln,
-    /// and re-establishes tunnels that were up last time.
-    func load(restoreConnections: Bool? = nil) {
+    /// Loads the store and builds supervisors. Call `startPolling()` (or
+    /// `pollAll()`) afterwards to learn which masters are already running.
+    func load() {
         do {
             let result = try store.load()
             document = result.document
@@ -75,22 +77,61 @@ final class TunnelManager: ObservableObject {
             LogStore.log(level: .error, category: "Store", message: "Failed to load tunnels.json", details: error.localizedDescription)
         }
 
-        let stale = reconciler.reconcile()
-        for process in stale {
-            LogStore.log(level: .warning, category: "Reconcile", message: "Stopped orphaned ssh (pid \(process.pid)) from a previous Lincoln", details: process.command)
-        }
-
         supervisors = document.tunnels.map(makeSupervisor)
         if selectedTunnelID == nil {
             selectedTunnelID = supervisors.first?.id
         }
+    }
 
-        let restore = restoreConnections ?? settings.restoreConnectionsOnLaunch
+    /// First poll after launch: adopt running masters, mark the ones that
+    /// were up last time but are gone, and auto-connect where asked.
+    func restore() async {
+        await pollAll()
         for supervisor in supervisors {
-            let wasUp = document.desiredUp.contains(supervisor.id)
-            if supervisor.tunnel.autoConnect || (restore && wasUp) {
-                LogStore.log(level: .info, category: "Launch", message: "Restoring \(supervisor.tunnel.displayName) (\(supervisor.tunnel.autoConnect ? "auto-connect" : "was connected"))")
-                supervisor.start()
+            if document.desiredUp.contains(supervisor.id), !supervisor.state.isConnected {
+                supervisor.markExpectedUp()
+            }
+            if supervisor.tunnel.autoConnect, !supervisor.state.isActive {
+                LogStore.log(level: .info, category: "Launch", message: "Auto-connecting \(supervisor.tunnel.displayName)")
+                connect(id: supervisor.id)
+            }
+        }
+        let dropped = supervisors.filter { if case .dropped = $0.state { return true } else { return false } }
+        if !dropped.isEmpty {
+            let names = dropped.map { $0.tunnel.displayName }.joined(separator: ", ")
+            notifier?.post(identifier: "restore", title: "Tunnels need reconnecting", body: names)
+        }
+    }
+
+    func startPolling() {
+        guard pollTimer == nil else { return }
+        scheduleNextPoll(after: 0)
+    }
+
+    func stopPolling() {
+        pollTimer?.invalidate()
+        pollTimer = nil
+    }
+
+    private func scheduleNextPoll(after delay: TimeInterval) {
+        pollTimer?.invalidate()
+        pollTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+                await self.pollAll()
+                let interval = self.supervisors.contains { $0.state.isConnecting || $0.state == .disconnecting } ? self.connectingPollInterval : self.idlePollInterval
+                self.scheduleNextPoll(after: interval)
+            }
+        }
+    }
+
+    /// Checks every tunnel's control socket concurrently.
+    func pollAll() async {
+        await withTaskGroup(of: Void.self) { group in
+            for supervisor in supervisors {
+                group.addTask { @MainActor in
+                    await supervisor.poll()
+                }
             }
         }
     }
@@ -98,11 +139,11 @@ final class TunnelManager: ObservableObject {
     private func makeSupervisor(for tunnel: Tunnel) -> TunnelSupervisor {
         let supervisor = TunnelSupervisor(
             tunnel: tunnel,
-            processFactory: processFactory,
+            launcher: launcher,
+            socket: socket,
             environment: environment,
             notifier: notifier,
-            policy: policy,
-            scheduler: scheduler
+            stateDirectory: stateDirectory
         )
         supervisor.onStateChange = { [weak self] _ in
             self?.stateVersion += 1
@@ -125,7 +166,7 @@ final class TunnelManager: ObservableObject {
     var connectedCount: Int { supervisors.filter { $0.state.isConnected }.count }
     var activeCount: Int { supervisors.filter { $0.state.isActive }.count }
     var anyConnected: Bool { connectedCount > 0 }
-    var anyNeedsAttention: Bool { supervisors.contains { $0.needsAttention } }
+    var anyNeedsAttention: Bool { supervisors.contains { $0.state.needsAttention } }
 
     // MARK: - Mutations
 
@@ -161,15 +202,19 @@ final class TunnelManager: ObservableObject {
 
     func update(_ tunnel: Tunnel) {
         document.upsert(tunnel)
-        supervisor(for: tunnel.id)?.tunnel = tunnel
+        if let supervisor = supervisor(for: tunnel.id) {
+            supervisor.tunnel = tunnel
+            supervisor.invalidateControlPath()
+        }
         persist()
         LogStore.log(level: .info, category: "Tunnels", message: "Updated \(tunnel.displayName)")
     }
 
+    /// Removes the tunnel from Lincoln. A running master is left alone: it
+    /// belongs to the user's ssh session, not to the app.
     func remove(id: UUID) {
         guard let supervisor = supervisor(for: id) else { return }
         let name = supervisor.tunnel.displayName
-        supervisor.stop()
         supervisors.removeAll { $0.id == id }
         document.remove(id: id)
         if selectedTunnelID == id {
@@ -207,6 +252,7 @@ final class TunnelManager: ObservableObject {
         document.setDesiredUp(true, id: id)
         persist()
         supervisor.start()
+        scheduleNextPoll(after: connectingPollInterval)
     }
 
     func disconnect(id: UUID) {
@@ -214,6 +260,7 @@ final class TunnelManager: ObservableObject {
         document.setDesiredUp(false, id: id)
         persist()
         supervisor.stop()
+        scheduleNextPoll(after: connectingPollInterval)
     }
 
     func toggle(id: UUID) {
@@ -237,24 +284,15 @@ final class TunnelManager: ObservableObject {
         }
     }
 
-    /// Quit path: stop every process but keep `desiredUp` so the next launch
-    /// restores the same tunnels.
-    func stopAllForQuit() {
-        for supervisor in supervisors where supervisor.state.isRunningProcess || supervisor.state.isActive {
-            supervisor.stop()
-        }
+    /// Quitting Lincoln leaves the masters running (they are the user's ssh
+    /// sessions); `desiredUp` is kept so the next launch knows what to expect.
+    func prepareForQuit() {
+        stopPolling()
     }
 
-    func handleNetworkChange() {
-        for supervisor in supervisors where supervisor.state.isActive {
-            supervisor.linkLost()
-        }
-    }
-
-    func handleWake() {
-        for supervisor in supervisors where supervisor.state.isActive && supervisor.tunnel.reconnectOnWake {
-            supervisor.linkLost()
-        }
+    /// Network change or wake: check right away instead of waiting for the timer.
+    func pollSoon() {
+        scheduleNextPoll(after: 0.5)
     }
 
     // MARK: - Import

@@ -56,6 +56,8 @@ final class TunnelEditorViewModelTests: XCTestCase {
         XCTAssertTrue(editor.validationErrors.contains { $0.contains("invalid name") })
         editor.removeOption(id: editor.draft.extraOptions[0].id)
         XCTAssertTrue(editor.configSnippet.hasPrefix("Host lincoln-gateway"))
-        XCTAssertTrue(editor.commandPreview.contains("-D 1080"))
+        XCTAssertTrue(editor.commandPreview(controlPath: nil).contains("-D 1080"))
+        XCTAssertTrue(editor.commandPreview(controlPath: nil).contains("ControlPath=<ControlPath from ssh -G>"))
+        XCTAssertTrue(editor.commandPreview(controlPath: "/tmp/s").contains("ControlPath=/tmp/s"))
     }
 }

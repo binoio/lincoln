@@ -1,0 +1,5 @@
+# Only LincolnCore is needed for the Linux test image.
+*
+!LincolnCore
+LincolnCore/.build
+LincolnCore/.swiftpm

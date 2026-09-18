@@ -7,22 +7,22 @@ final class TunnelManagerTests: XCTestCase {
     private var directory: URL!
     private var store: TunnelStore!
     private var settings: SettingsManager!
-    private var factory: MockTunnelProcessFactory!
+    private var launcher: MockTerminalLauncher!
+    private var socket: MockControlSocket!
     private var environment: MockSSHEnvironment!
-    private var scheduler: ManualScheduler!
-    private var terminated: [pid_t] = []
-    private var processList = ""
+    private var notifier: MockNotifier!
+
+    private var socketPath: String { environment.resolved!.path }
 
     override func setUp() async throws {
         directory = TestFixtures.temporaryDirectory("manager")
         store = TunnelStore(fileURL: directory.appendingPathComponent("tunnels.json"))
         settings = SettingsManager(defaults: TestFixtures.isolatedDefaults(), loginItem: FakeLoginItem())
         settings.appliesActivationPolicy = false
-        factory = MockTunnelProcessFactory()
+        launcher = MockTerminalLauncher()
+        socket = MockControlSocket()
         environment = MockSSHEnvironment()
-        scheduler = ManualScheduler()
-        terminated = []
-        processList = ""
+        notifier = MockNotifier()
     }
 
     override func tearDown() async throws {
@@ -34,11 +34,9 @@ final class TunnelManagerTests: XCTestCase {
             store: store,
             settings: settings,
             environment: environment,
-            processFactory: factory,
-            notifier: MockNotifier(),
-            reconciler: StaleProcessReconciler(listProcesses: { [self] in processList }, currentPID: 100, terminate: { [self] in terminated.append($0) }),
-            policy: .immediate,
-            scheduler: scheduler.scheduler,
+            launcher: launcher,
+            socket: socket,
+            notifier: notifier,
             configParser: SSHConfigParser(homeDirectory: home ?? URL(fileURLWithPath: "/nonexistent"))
         )
     }
@@ -71,52 +69,71 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertEqual(manager.selectedTunnelID, supervisor.id)
     }
 
-    func testConnectRecordsDesiredUpAndRestoreOnRelaunch() async throws {
+    func testConnectRecordsDesiredUpAndRestoreMarksDropped() async throws {
         let manager = makeManager()
         manager.load()
         let supervisor = manager.add(TestFixtures.tunnel())
         manager.connect(id: supervisor.id)
         await drainMainQueue()
-        XCTAssertTrue(supervisor.state.isActive)
+        XCTAssertTrue(supervisor.state.isConnecting)
+        XCTAssertEqual(launcher.launches.count, 1)
         XCTAssertEqual(try store.load().document.desiredUp, [supervisor.id])
 
-        // Simulate quit: processes stop, desiredUp is kept.
-        manager.stopAllForQuit()
+        // The master comes up; quitting leaves it running.
+        socket.running[socketPath] = 5
+        await manager.pollAll()
+        XCTAssertTrue(supervisor.state.isConnected)
+        manager.prepareForQuit()
         XCTAssertEqual(try store.load().document.desiredUp, [supervisor.id])
 
-        // Relaunch: a fresh manager restores the connection.
+        // Relaunch while the master is still running: adopted, no Terminal.
         let relaunched = makeManager()
         relaunched.load()
-        await drainMainQueue()
-        XCTAssertEqual(relaunched.supervisors.count, 1)
-        XCTAssertTrue(relaunched.supervisors[0].state.isActive)
-        XCTAssertEqual(factory.processes.count, 2)
+        await relaunched.restore()
+        XCTAssertTrue(relaunched.supervisors[0].state.isConnected)
+        XCTAssertEqual(launcher.launches.count, 1)
+        XCTAssertTrue(notifier.posted.isEmpty)
 
-        // Explicit disconnect clears the intent.
-        relaunched.disconnect(id: supervisor.id)
-        XCTAssertEqual(try store.load().document.desiredUp, [])
+        // Relaunch after the master died: shown as dropped, user reconnects.
+        socket.running.removeAll()
         let third = makeManager()
         third.load()
+        await third.restore()
+        XCTAssertEqual(third.supervisors[0].state, .dropped(reason: "Was connected when Lincoln last quit"))
+        XCTAssertEqual(notifier.posted.last?.title, "Tunnels need reconnecting")
+        XCTAssertEqual(launcher.launches.count, 1, "never reopens Terminal unasked")
+
+        // Explicit disconnect clears the intent.
+        third.disconnect(id: supervisor.id)
         await drainMainQueue()
-        XCTAssertFalse(third.supervisors[0].state.isActive)
+        XCTAssertEqual(third.supervisors[0].state, .idle)
+        XCTAssertEqual(try store.load().document.desiredUp, [])
     }
 
-    func testRestoreCanBeDisabledButAutoConnectAlwaysApplies() async throws {
-        var auto = TestFixtures.tunnel(name: "Auto")
-        auto.autoConnect = true
+    func testAutoConnectOpensTerminalAtLaunch() async throws {
         var document = TunnelDocument()
-        document.upsert(auto)
-        let manual = TestFixtures.tunnel(name: "Manual")
-        document.upsert(manual)
-        document.setDesiredUp(true, id: manual.id)
+        document.upsert(TestFixtures.tunnel(name: "Auto", autoConnect: true))
+        document.upsert(TestFixtures.tunnel(name: "Manual"))
         try store.save(document)
 
-        settings.restoreConnectionsOnLaunch = false
         let manager = makeManager()
         manager.load()
+        await manager.restore()
         await drainMainQueue()
-        XCTAssertTrue(manager.supervisor(for: auto.id)!.state.isActive)
-        XCTAssertFalse(manager.supervisor(for: manual.id)!.state.isActive)
+        XCTAssertEqual(launcher.launches.map(\.name), ["Auto"])
+        XCTAssertTrue(manager.supervisors[0].state.isConnecting)
+        XCTAssertEqual(manager.supervisors[1].state, .idle)
+    }
+
+    func testExternallyStartedMasterIsAdoptedByPolling() async {
+        let manager = makeManager()
+        manager.load()
+        let supervisor = manager.add(TestFixtures.tunnel())
+        socket.running[socketPath] = 77
+        await manager.pollAll()
+        XCTAssertTrue(supervisor.state.isConnected)
+        XCTAssertEqual(manager.connectedCount, 1)
+        XCTAssertTrue(manager.anyConnected)
     }
 
     func testCorruptStoreIsSurfacedNotFatal() throws {
@@ -129,18 +146,6 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: directory.path).contains { $0.hasPrefix("tunnels.json.corrupt-") })
     }
 
-    func testLaunchReconciliationStopsOrphans() {
-        let id = UUID()
-        processList = """
-          501   100 /usr/bin/ssh -N -o LocalCommand=echo \(SSHCommandBuilder.readySentinel(for: id)) tg
-          502     1 /usr/bin/ssh -N -o LocalCommand=echo \(SSHCommandBuilder.readySentinel(for: UUID())) della
-          503     1 /usr/bin/ssh unrelated
-        """
-        let manager = makeManager()
-        manager.load()
-        XCTAssertEqual(terminated, [502], "only Lincoln-owned ssh from another Lincoln is stopped")
-    }
-
     func testToggleConnectAllDisconnectAll() async {
         let manager = makeManager()
         manager.load()
@@ -149,37 +154,28 @@ final class TunnelManagerTests: XCTestCase {
         manager.connectAll()
         await drainMainQueue()
         XCTAssertEqual(manager.activeCount, 2)
+        XCTAssertEqual(launcher.launches.map(\.name), ["A", "B"])
         manager.toggle(id: a.id)
+        await drainMainQueue()
         XCTAssertFalse(a.state.isActive)
         XCTAssertTrue(b.state.isActive)
         manager.disconnectAll()
+        await drainMainQueue()
         XCTAssertEqual(manager.activeCount, 0)
         XCTAssertEqual(manager.document.desiredUp, [])
     }
 
-    func testNetworkChangeAndWakeRestartOnlyActiveTunnels() async {
+    func testRemoveLeavesRunningMasterAlone() async {
         let manager = makeManager()
         manager.load()
-        let a = manager.add(TestFixtures.tunnel(name: "A"))
-        var noWake = TestFixtures.tunnel(name: "B")
-        noWake.reconnectOnWake = false
-        let b = manager.add(noWake)
-        let idle = manager.add(TestFixtures.tunnel(name: "C"))
-        manager.connect(id: a.id)
-        manager.connect(id: b.id)
+        let supervisor = manager.add(TestFixtures.tunnel())
+        socket.running[socketPath] = 3
+        await manager.pollAll()
+        XCTAssertTrue(supervisor.state.isConnected)
+        manager.remove(id: supervisor.id)
         await drainMainQueue()
-        factory.processes[0].emit(SSHCommandBuilder.readySentinel(for: a.id) + "\n")
-        factory.processes[1].emit(SSHCommandBuilder.readySentinel(for: b.id) + "\n")
-        XCTAssertTrue(a.state.isConnected)
-        XCTAssertTrue(b.state.isConnected)
-
-        manager.handleWake()
-        XCTAssertFalse(a.state.isConnected)
-        XCTAssertTrue(b.state.isConnected, "reconnectOnWake is off for B")
-        XCTAssertEqual(idle.state, .idle)
-
-        manager.handleNetworkChange()
-        XCTAssertFalse(b.state.isConnected)
+        XCTAssertTrue(socket.exits.isEmpty)
+        XCTAssertEqual(socket.running[socketPath], 3)
     }
 
     func testDuplicateAndMove() {
@@ -194,12 +190,26 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertEqual(manager.document.tunnels.map(\.name), ["A copy", "A"])
     }
 
+    func testPollingTimerRuns() async {
+        let manager = makeManager()
+        manager.load()
+        let supervisor = manager.add(TestFixtures.tunnel())
+        manager.idlePollInterval = 0.05
+        manager.startPolling()
+        socket.running[socketPath] = 1
+        let connected = expectation(description: "connected")
+        connected.assertForOverFulfill = false
+        supervisor.onStateChange = { if $0.state.isConnected { connected.fulfill() } }
+        await fulfillment(of: [connected], timeout: 3)
+        manager.stopPolling()
+    }
+
     func testImportFromSSHConfig() throws {
         let home = TestFixtures.temporaryDirectory("home")
         let ssh = home.appendingPathComponent(".ssh")
         try FileManager.default.createDirectory(at: ssh, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: home) }
-        try """
+        let config = """
         Host tg
             HostName tigressgateway.princeton.edu
             DynamicForward 1080
@@ -210,7 +220,8 @@ final class TunnelManagerTests: XCTestCase {
             HostName plain.example.org
         Host *
             User alice
-        """.write(to: ssh.appendingPathComponent("config"), atomically: true, encoding: .utf8)
+        """
+        try config.write(to: ssh.appendingPathComponent("config"), atomically: true, encoding: .utf8)
 
         let manager = makeManager(home: home)
         manager.load()
@@ -225,7 +236,6 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertTrue(created[0].notes.contains("HostName tigressgateway.princeton.edu"))
         XCTAssertEqual(try store.load().document.tunnels.count, 3)
         XCTAssertEqual(manager.selectedTunnelID, created.last?.id)
-        // The config itself is untouched.
-        XCTAssertEqual(try String(contentsOf: ssh.appendingPathComponent("config"), encoding: .utf8).contains("Host plain"), true)
+        XCTAssertEqual(try String(contentsOf: ssh.appendingPathComponent("config"), encoding: .utf8), config, "ssh config is untouched")
     }
 }

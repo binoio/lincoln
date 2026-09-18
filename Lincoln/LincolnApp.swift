@@ -59,13 +59,9 @@ class LincolnAppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        LogStore.log(level: .info, category: "Lifecycle", message: "applicationShouldTerminate: stopping tunnels")
-        manager?.stopAllForQuit()
+        LogStore.log(level: .info, category: "Lifecycle", message: "applicationShouldTerminate: control masters keep running")
+        manager?.prepareForQuit()
         return .terminateNow
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
-        manager?.stopAllForQuit()
     }
 }
 
@@ -89,7 +85,8 @@ struct LincolnApp: App {
             store: TunnelStore(fileURL: TunnelStore.defaultFileURL()),
             settings: settings,
             environment: environment,
-            processFactory: PTYProcessFactory(),
+            launcher: TerminalAppLauncher(),
+            socket: ControlSocketClient(environment: environment),
             notifier: notifier
         )
         _settings = StateObject(wrappedValue: settings)
@@ -98,9 +95,13 @@ struct LincolnApp: App {
 
         if !LincolnAppDelegate.isRunningTests {
             manager.load()
+            Task { @MainActor in
+                await manager.restore()
+                manager.startPolling()
+            }
         }
-        networkMonitor.onPathChanged = { [weak manager] in manager?.handleNetworkChange() }
-        powerMonitor.onDidWake = { [weak manager] in manager?.handleWake() }
+        networkMonitor.onPathChanged = { [weak manager] in manager?.pollSoon() }
+        powerMonitor.onDidWake = { [weak manager] in manager?.pollSoon() }
         networkMonitor.start()
         powerMonitor.start()
     }
@@ -175,12 +176,12 @@ struct LincolnApp: App {
     }
 
     private var menuBarHelp: String {
-        if manager.anyNeedsAttention { return "Lincoln: a tunnel needs your input" }
+        if manager.anyNeedsAttention { return "Lincoln: a tunnel dropped" }
         return manager.anyConnected ? "Lincoln: \(manager.connectedCount) connected" : "Lincoln: no tunnels connected"
     }
 
     private func quit() {
-        manager.stopAllForQuit()
+        manager.prepareForQuit()
         NSApplication.shared.terminate(nil)
     }
 }
@@ -240,10 +241,10 @@ private struct TunnelMenuItems: View {
         .keyboardShortcut("t", modifiers: .command)
         .disabled(manager.selectedTunnelID == nil)
 
-        Button("Restart") {
-            manager.selectedSupervisor?.restart()
+        Button("Open Terminal Session") {
+            manager.selectedSupervisor?.openSession()
         }
-        .keyboardShortcut("r", modifiers: .command)
+        .keyboardShortcut("o", modifiers: [.command, .shift])
         .disabled(!selectedIsConnected)
 
         Divider()

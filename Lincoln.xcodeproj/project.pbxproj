@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		B01 /* LincolnApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F01; };
 		B02 /* LogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F02; };
-		B03 /* PTYProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03; };
+		B03 /* TerminalLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03; };
 		B04 /* TunnelSupervisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04; };
 		B05 /* TunnelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F05; };
 		B06 /* SSHEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06; };
@@ -18,7 +18,7 @@
 		B09 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F09; };
 		B10 /* LogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10; };
 		B11 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11; };
-		B12 /* StaleProcessReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12; };
+		B12 /* ControlSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12; };
 		B13 /* TunnelEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13; };
 		B14 /* UpdaterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14; };
 		B15 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15; };
@@ -26,27 +26,25 @@
 		B17 /* TunnelDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17; };
 		B18 /* TunnelEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18; };
 		B19 /* ForwardsEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19; };
-		B20 /* ConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20; };
 		B21 /* ImportSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21; };
 		B22 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F22; };
 		B23 /* StatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23; };
 		B24 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24; };
 		B25 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25; };
-		B26 /* ConsoleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26; };
 		B90 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F30; };
 		B91 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = P01 /* Sparkle */; };
 		B92 /* LincolnCore in Frameworks */ = {isa = PBXBuildFile; productRef = P03 /* LincolnCore */; };
 
-		BT01 /* MockTunnelProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT01; };
+		BT01 /* Mocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT01; };
 		BT02 /* TunnelSupervisorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT02; };
 		BT03 /* TunnelManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT03; };
 		BT04 /* SettingsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT04; };
-		BT05 /* PTYProcessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT05; };
+		BT05 /* TerminalLauncherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT05; };
 		BT06 /* MenuBarIconTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT06; };
 		BT07 /* LogStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT07; };
 		BT08 /* SSHEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT08; };
 		BT09 /* TunnelEditorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT09; };
-		BT10 /* StaleProcessReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT10; };
+		BT10 /* ControlSocketClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT10; };
 		BT11 /* RealSSHIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT11; };
 
 		BU01 /* LincolnUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FU01; };
@@ -72,7 +70,7 @@
 /* Begin PBXFileReference section */
 		F01 /* LincolnApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LincolnApp.swift; sourceTree = "<group>"; };
 		F02 /* LogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogEntry.swift; sourceTree = "<group>"; };
-		F03 /* PTYProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYProcess.swift; sourceTree = "<group>"; };
+		F03 /* TerminalLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalLauncher.swift; sourceTree = "<group>"; };
 		F04 /* TunnelSupervisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSupervisor.swift; sourceTree = "<group>"; };
 		F05 /* TunnelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelManager.swift; sourceTree = "<group>"; };
 		F06 /* SSHEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHEnvironment.swift; sourceTree = "<group>"; };
@@ -81,7 +79,7 @@
 		F09 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		F10 /* LogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStore.swift; sourceTree = "<group>"; };
 		F11 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
-		F12 /* StaleProcessReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleProcessReconciler.swift; sourceTree = "<group>"; };
+		F12 /* ControlSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlSocketClient.swift; sourceTree = "<group>"; };
 		F13 /* TunnelEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelEditorViewModel.swift; sourceTree = "<group>"; };
 		F14 /* UpdaterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterViewModel.swift; sourceTree = "<group>"; };
 		F15 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -89,28 +87,26 @@
 		F17 /* TunnelDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelDetailView.swift; sourceTree = "<group>"; };
 		F18 /* TunnelEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelEditorView.swift; sourceTree = "<group>"; };
 		F19 /* ForwardsEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForwardsEditorView.swift; sourceTree = "<group>"; };
-		F20 /* ConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleView.swift; sourceTree = "<group>"; };
 		F21 /* ImportSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportSheetView.swift; sourceTree = "<group>"; };
 		F22 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		F23 /* StatusBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadgeView.swift; sourceTree = "<group>"; };
 		F24 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F25 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
-		F26 /* ConsoleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleTextView.swift; sourceTree = "<group>"; };
 		F30 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F32 /* Lincoln.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Lincoln.entitlements; sourceTree = "<group>"; };
 		P02 /* Lincoln.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lincoln.app; sourceTree = BUILT_PRODUCTS_DIR; };
 
-		FT01 /* MockTunnelProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTunnelProcess.swift; sourceTree = "<group>"; };
+		FT01 /* Mocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mocks.swift; sourceTree = "<group>"; };
 		FT02 /* TunnelSupervisorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSupervisorTests.swift; sourceTree = "<group>"; };
 		FT03 /* TunnelManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelManagerTests.swift; sourceTree = "<group>"; };
 		FT04 /* SettingsManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManagerTests.swift; sourceTree = "<group>"; };
-		FT05 /* PTYProcessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYProcessTests.swift; sourceTree = "<group>"; };
+		FT05 /* TerminalLauncherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalLauncherTests.swift; sourceTree = "<group>"; };
 		FT06 /* MenuBarIconTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIconTests.swift; sourceTree = "<group>"; };
 		FT07 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FT08 /* SSHEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHEnvironmentTests.swift; sourceTree = "<group>"; };
 		FT09 /* TunnelEditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelEditorViewModelTests.swift; sourceTree = "<group>"; };
-		FT10 /* StaleProcessReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleProcessReconcilerTests.swift; sourceTree = "<group>"; };
+		FT10 /* ControlSocketClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlSocketClientTests.swift; sourceTree = "<group>"; };
 		FT11 /* RealSSHIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealSSHIntegrationTests.swift; sourceTree = "<group>"; };
 		PT01 /* LincolnTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LincolnTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 
@@ -182,7 +178,7 @@
 		611 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				F03 /* PTYProcess.swift */,
+				F03 /* TerminalLauncher.swift */,
 				F04 /* TunnelSupervisor.swift */,
 				F05 /* TunnelManager.swift */,
 				F06 /* SSHEnvironment.swift */,
@@ -191,7 +187,7 @@
 				F09 /* NotificationService.swift */,
 				F10 /* LogStore.swift */,
 				F11 /* SettingsManager.swift */,
-				F12 /* StaleProcessReconciler.swift */,
+				F12 /* ControlSocketClient.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -213,13 +209,11 @@
 				F17 /* TunnelDetailView.swift */,
 				F18 /* TunnelEditorView.swift */,
 				F19 /* ForwardsEditorView.swift */,
-				F20 /* ConsoleView.swift */,
 				F21 /* ImportSheetView.swift */,
 				F22 /* MenuBarView.swift */,
 				F23 /* StatusBadgeView.swift */,
 				F24 /* SettingsView.swift */,
 				F25 /* LogsView.swift */,
-				F26 /* ConsoleTextView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -227,16 +221,16 @@
 		602 /* LincolnTests */ = {
 			isa = PBXGroup;
 			children = (
-				FT01 /* MockTunnelProcess.swift */,
+				FT01 /* Mocks.swift */,
 				FT02 /* TunnelSupervisorTests.swift */,
 				FT03 /* TunnelManagerTests.swift */,
 				FT04 /* SettingsManagerTests.swift */,
-				FT05 /* PTYProcessTests.swift */,
+				FT05 /* TerminalLauncherTests.swift */,
 				FT06 /* MenuBarIconTests.swift */,
 				FT07 /* LogStoreTests.swift */,
 				FT08 /* SSHEnvironmentTests.swift */,
 				FT09 /* TunnelEditorViewModelTests.swift */,
-				FT10 /* StaleProcessReconcilerTests.swift */,
+				FT10 /* ControlSocketClientTests.swift */,
 				FT11 /* RealSSHIntegrationTests.swift */,
 			);
 			path = LincolnTests;
@@ -390,7 +384,7 @@
 			files = (
 				B01 /* LincolnApp.swift in Sources */,
 				B02 /* LogEntry.swift in Sources */,
-				B03 /* PTYProcess.swift in Sources */,
+				B03 /* TerminalLauncher.swift in Sources */,
 				B04 /* TunnelSupervisor.swift in Sources */,
 				B05 /* TunnelManager.swift in Sources */,
 				B06 /* SSHEnvironment.swift in Sources */,
@@ -399,7 +393,7 @@
 				B09 /* NotificationService.swift in Sources */,
 				B10 /* LogStore.swift in Sources */,
 				B11 /* SettingsManager.swift in Sources */,
-				B12 /* StaleProcessReconciler.swift in Sources */,
+				B12 /* ControlSocketClient.swift in Sources */,
 				B13 /* TunnelEditorViewModel.swift in Sources */,
 				B14 /* UpdaterViewModel.swift in Sources */,
 				B15 /* ContentView.swift in Sources */,
@@ -407,13 +401,11 @@
 				B17 /* TunnelDetailView.swift in Sources */,
 				B18 /* TunnelEditorView.swift in Sources */,
 				B19 /* ForwardsEditorView.swift in Sources */,
-				B20 /* ConsoleView.swift in Sources */,
 				B21 /* ImportSheetView.swift in Sources */,
 				B22 /* MenuBarView.swift in Sources */,
 				B23 /* StatusBadgeView.swift in Sources */,
 				B24 /* SettingsView.swift in Sources */,
 				B25 /* LogsView.swift in Sources */,
-				B26 /* ConsoleTextView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -421,16 +413,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BT01 /* MockTunnelProcess.swift in Sources */,
+				BT01 /* Mocks.swift in Sources */,
 				BT02 /* TunnelSupervisorTests.swift in Sources */,
 				BT03 /* TunnelManagerTests.swift in Sources */,
 				BT04 /* SettingsManagerTests.swift in Sources */,
-				BT05 /* PTYProcessTests.swift in Sources */,
+				BT05 /* TerminalLauncherTests.swift in Sources */,
 				BT06 /* MenuBarIconTests.swift in Sources */,
 				BT07 /* LogStoreTests.swift in Sources */,
 				BT08 /* SSHEnvironmentTests.swift in Sources */,
 				BT09 /* TunnelEditorViewModelTests.swift in Sources */,
-				BT10 /* StaleProcessReconcilerTests.swift in Sources */,
+				BT10 /* ControlSocketClientTests.swift in Sources */,
 				BT11 /* RealSSHIntegrationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

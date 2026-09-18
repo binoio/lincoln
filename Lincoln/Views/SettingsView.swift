@@ -32,14 +32,13 @@ public struct SettingsView: View {
 
                 Section("Launch & Startup Behavior") {
                     Toggle("Start Lincoln at login", isOn: $settings.launchAtLogin)
-                    Toggle("Reconnect tunnels that were connected when Lincoln last quit", isOn: $settings.restoreConnectionsOnLaunch)
-                    Text("Tunnels marked “Connect when Lincoln launches” always connect.")
+                    Text("Tunnels marked “Connect when Lincoln launches” open a Terminal window at launch. Tunnels that were up last time but are gone are shown as dropped, never reconnected on their own.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Section("Notifications") {
-                    Toggle("Notify when a tunnel needs input or disconnects", isOn: $settings.notificationsEnabled)
+                    Toggle("Notify when a tunnel drops or fails to connect", isOn: $settings.notificationsEnabled)
                 }
             }
             .formStyle(.grouped)
@@ -67,17 +66,15 @@ public struct SettingsView: View {
                 Section("Environment") {
                     TextField("Extra PATH:", text: $settings.extraPath)
                         .textFieldStyle(.roundedBorder)
-                    Text("Prepended to PATH so ProxyCommand and Match exec helpers (for example the az CLI) resolve when Lincoln is launched from the Dock.")
+                    Text("Prepended to PATH for Lincoln's own ssh -G / -O calls, so Match exec helpers (for example the az CLI) resolve when Lincoln is launched from the Dock. The tunnel itself runs in Terminal.app with your login shell environment.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    TextField("SSH_AUTH_SOCK:", text: $settings.sshAuthSock, prompt: Text("inherit from launchd"))
-                        .textFieldStyle(.roundedBorder)
                 }
 
                 Section("Keepalive") {
                     Stepper("ServerAliveInterval: \(settings.serverAliveInterval)s", value: $settings.serverAliveInterval, in: 5...300, step: 5)
                     Stepper("ServerAliveCountMax: \(settings.serverAliveCountMax)", value: $settings.serverAliveCountMax, in: 1...10)
-                    Text("A dead link is noticed after ServerAliveInterval × ServerAliveCountMax seconds and the tunnel reconnects.")
+                    Text("The control master gives up after ServerAliveInterval × ServerAliveCountMax seconds without a reply; Lincoln then shows the tunnel as dropped.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

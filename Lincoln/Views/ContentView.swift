@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  Lincoln
 //
-//  Main window: tunnel list in the sidebar, editor + console in the detail.
+//  Main window: tunnel list in the sidebar, status + editor in the detail.
 //
 
 import SwiftUI
@@ -57,7 +57,7 @@ public struct ContentView: View {
         .alert(item: $pendingDeletion) { supervisor in
             Alert(
                 title: Text("Remove “\(supervisor.tunnel.displayName)”?"),
-                message: Text("The tunnel will be disconnected and removed from Lincoln. Your ~/.ssh/config is not touched."),
+                message: Text("The tunnel is removed from Lincoln. A running control master is left alone, and your ~/.ssh/config is not touched."),
                 primaryButton: .destructive(Text("Remove")) { manager.remove(id: supervisor.id) },
                 secondaryButton: .cancel()
             )

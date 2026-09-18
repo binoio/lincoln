@@ -4,257 +4,189 @@ import LincolnCore
 
 @MainActor
 final class TunnelSupervisorTests: XCTestCase {
-    private var factory: MockTunnelProcessFactory!
+    private var launcher: MockTerminalLauncher!
+    private var socket: MockControlSocket!
     private var environment: MockSSHEnvironment!
     private var notifier: MockNotifier!
-    private var scheduler: ManualScheduler!
+    private var stateDirectory: URL!
     private var tunnel: Tunnel!
     private var supervisor: TunnelSupervisor!
 
+    private var socketPath: String { environment.resolved!.path }
+
     override func setUp() async throws {
-        factory = MockTunnelProcessFactory()
+        launcher = MockTerminalLauncher()
+        socket = MockControlSocket()
         environment = MockSSHEnvironment()
         notifier = MockNotifier()
-        scheduler = ManualScheduler()
+        stateDirectory = TestFixtures.temporaryDirectory("state")
         tunnel = TestFixtures.tunnel()
         supervisor = makeSupervisor(tunnel)
     }
 
-    private func makeSupervisor(_ tunnel: Tunnel) -> TunnelSupervisor {
-        TunnelSupervisor(
-            tunnel: tunnel,
-            processFactory: factory,
-            environment: environment,
-            notifier: notifier,
-            policy: ReconnectPolicy(baseDelay: 1, maximumDelay: 60, maximumInitialAttempts: 3, jitterFraction: 0),
-            scheduler: scheduler.scheduler
-        )
+    override func tearDown() async throws {
+        try? FileManager.default.removeItem(at: stateDirectory)
     }
 
-    private var sentinel: String { SSHCommandBuilder.readySentinel(for: tunnel.id) }
+    private func makeSupervisor(_ tunnel: Tunnel) -> TunnelSupervisor {
+        TunnelSupervisor(tunnel: tunnel, launcher: launcher, socket: socket, environment: environment, notifier: notifier, stateDirectory: stateDirectory)
+    }
 
-    private func startAndSpawn() async -> MockTunnelProcess {
+    private func writeStatus(_ status: Int32) throws {
+        try FileManager.default.createDirectory(at: stateDirectory, withIntermediateDirectories: true)
+        try "\(status)\n".write(to: supervisor.statusFileURL, atomically: true, encoding: .utf8)
+    }
+
+    func testStartLaunchesMasterScriptInTerminal() async {
         supervisor.start()
         await drainMainQueue()
-        return factory.last!
+        XCTAssertEqual(supervisor.state.isConnecting, true)
+        XCTAssertEqual(launcher.launches.count, 1)
+        let script = launcher.last!.script
+        XCTAssertTrue(script.hasPrefix("#!/bin/zsh"))
+        XCTAssertTrue(script.contains("/usr/bin/ssh -M -N -f -o ControlPath=\(socketPath)"))
+        XCTAssertTrue(script.contains("-D 1080 -- tg"))
+        XCTAssertTrue(script.contains(supervisor.statusFileURL.path))
+        XCTAssertEqual(launcher.last!.name, "Gateway")
+        XCTAssertEqual(environment.preparedDirectories, [socketPath])
+        XCTAssertEqual(supervisor.controlPath?.path, socketPath)
+        XCTAssertTrue(supervisor.lastCommandLine.hasPrefix("/usr/bin/ssh -M -N -f"))
     }
 
-    func testStartSpawnsSSHWithBuiltArguments() async {
-        let process = await startAndSpawn()
-        XCTAssertEqual(supervisor.state, .connecting(attempt: 1))
-        XCTAssertTrue(process.started)
-        XCTAssertEqual(process.executable, "/usr/bin/ssh")
-        XCTAssertEqual(process.arguments, SSHCommandBuilder.arguments(for: tunnel, environment: environment.builderEnvironment))
-        XCTAssertEqual(process.environment["TERM"], "dumb")
-        XCTAssertTrue(supervisor.lastCommandLine.contains("-- tg"))
-        XCTAssertTrue(supervisor.console.text.contains("/usr/bin/ssh -N"))
-        XCTAssertEqual(environment.resolveCalls, 0, "ControlPath is only resolved when sharing is on")
-    }
-
-    func testInvalidTunnelDoesNotStart() {
+    func testInvalidTunnelDoesNotStart() async {
         supervisor = makeSupervisor(Tunnel(name: "x", host: ""))
         supervisor.start()
+        await drainMainQueue()
         XCTAssertEqual(supervisor.state, .idle)
-        XCTAssertTrue(factory.processes.isEmpty)
+        XCTAssertTrue(launcher.launches.isEmpty)
         XCTAssertNotNil(supervisor.lastError)
     }
 
-    func testDuoPromptFlowToConnected() async {
-        let process = await startAndSpawn()
-        process.emit("Duo two-factor login for alice\n\n 1. Duo Push to XXX-XXX-1234\n 2. Phone call\n\nPasscode or option (1-2): ")
-        XCTAssertEqual(supervisor.state, .connecting(attempt: 1), "prompt is not declared until the output goes quiet")
-        scheduler.fireAll()
-        XCTAssertEqual(supervisor.state, .waitingForInput(prompt: "Passcode or option (1-2):", attempt: 1))
-        XCTAssertTrue(supervisor.needsAttention)
-        XCTAssertEqual(supervisor.currentPrompt?.kind, .passcode)
-        XCTAssertEqual(notifier.posted.count, 1)
-        XCTAssertEqual(notifier.posted.first?.title, "Gateway needs your input")
-
-        supervisor.submitInput("1")
-        XCTAssertEqual(process.writes, ["1\n"])
-        XCTAssertEqual(supervisor.state, .connecting(attempt: 1))
-        XCTAssertFalse(supervisor.needsAttention)
-        XCTAssertTrue(notifier.cleared.contains("attention-\(tunnel.id.uuidString)"))
-
-        process.emit("1\r\nSuccess. Logging you in...\r\n\(sentinel)\r\n")
-        XCTAssertTrue(supervisor.state.isConnected)
-        XCTAssertTrue(supervisor.console.text.contains("— connected"))
-        XCTAssertFalse(supervisor.console.text.contains("\r"))
-    }
-
-    func testSecretPromptIsHiddenAndPartialChunksJoin() async {
-        let process = await startAndSpawn()
-        process.emit("Enter passphrase for key '/Users/alice/.ssh/id_ed25519'")
-        process.emit(": ")
-        scheduler.fireAll()
-        XCTAssertEqual(supervisor.currentPrompt?.isSecret, true)
-        XCTAssertTrue(supervisor.state.isWaitingForInput)
-    }
-
-    func testPromptTimerIsCancelledWhenMoreOutputArrives() async {
-        let process = await startAndSpawn()
-        process.emit("Warning: something:")
-        process.emit(" more text\n")
-        scheduler.fireAll()
-        XCTAssertEqual(supervisor.state, .connecting(attempt: 1))
-        XCTAssertNil(supervisor.currentPrompt)
-    }
-
-    func testSentinelFromPreviousRunDoesNotCountForNewRun() async {
-        let first = await startAndSpawn()
-        first.emit("\(sentinel)\n")
-        XCTAssertTrue(supervisor.state.isConnected)
-        first.exit(status: 255)
-        XCTAssertEqual(supervisor.state.attempt, 1)
-        guard case .reconnecting = supervisor.state else { return XCTFail("expected reconnecting, got \(supervisor.state)") }
-        scheduler.fire { $0 >= 1 }
-        await drainMainQueue()
-        XCTAssertEqual(supervisor.state, .connecting(attempt: 1))
-        let second = factory.last!
-        XCTAssertNotIdentical(first, second)
-        second.emit("banner\n")
-        XCTAssertEqual(supervisor.state, .connecting(attempt: 1), "old sentinel in the console must not mark the new run connected")
-        second.emit("\(sentinel)\n")
-        XCTAssertTrue(supervisor.state.isConnected)
-    }
-
-    func testInitialFailureBacksOffThenGivesUp() async {
-        let first = await startAndSpawn()
-        first.exit(status: 255)
-        XCTAssertEqual(supervisor.state, .reconnecting(attempt: 2, nextAttemptAt: supervisor.state.nextAttemptAt!))
-        XCTAssertEqual(scheduler.pending.map(\.delay), [1])
-        scheduler.fireAll()
-        await drainMainQueue()
-        XCTAssertEqual(factory.processes.count, 2)
-        factory.last!.exit(status: 255)
-        scheduler.fireAll()
-        await drainMainQueue()
-        XCTAssertEqual(factory.processes.count, 3)
-        factory.last!.emit("ssh: Could not resolve hostname tg: nodename nor servname provided\r\n")
-        factory.last!.exit(status: 255)
-        XCTAssertEqual(supervisor.state, .failed(reason: "ssh: Could not resolve hostname tg: nodename nor servname provided"))
-        XCTAssertEqual(supervisor.lastError, "ssh: Could not resolve hostname tg: nodename nor servname provided")
-        XCTAssertEqual(notifier.posted.last?.title, "Gateway disconnected")
-    }
-
-    func testStopTerminatesAndReturnsToIdle() async {
-        let process = await startAndSpawn()
-        process.emit("\(sentinel)\n")
-        supervisor.stop()
-        XCTAssertEqual(process.terminateCount, 1)
-        XCTAssertEqual(supervisor.state, .idle)
-        XCTAssertTrue(supervisor.console.text.contains("ssh exited (143)"))
-    }
-
-    func testStopWhileReconnectingCancelsTimer() async {
-        let process = await startAndSpawn()
-        process.exit(status: 1)
-        XCTAssertEqual(scheduler.pending.count, 1)
-        supervisor.stop()
-        XCTAssertEqual(supervisor.state, .idle)
-        XCTAssertTrue(scheduler.pending.isEmpty)
-        scheduler.fireAll()
-        await drainMainQueue()
-        XCTAssertEqual(factory.processes.count, 1, "cancelled backoff must not spawn")
-    }
-
-    func testStopDuringControlPathResolutionDoesNotSpawn() async {
-        var shared = tunnel!
-        shared.shareControlMaster = true
-        supervisor = makeSupervisor(shared)
-        environment.controlPathToReturn = "/tmp/sockets/socket-alice@tg:22"
+    func testPollWhileConnectingThenConnected() async throws {
         supervisor.start()
-        // Stop before the async resolution completes.
-        supervisor.stop()
         await drainMainQueue()
-        XCTAssertTrue(factory.processes.isEmpty)
-        XCTAssertEqual(supervisor.state, .idle, "nothing to kill, so the stop completes immediately")
-        // A later start works normally.
-        _ = await startAndSpawn()
-        XCTAssertEqual(factory.processes.count, 1)
-        XCTAssertEqual(supervisor.state, .connecting(attempt: 1))
+        await supervisor.poll()
+        XCTAssertTrue(supervisor.state.isConnecting, "Duo still being answered in Terminal")
+
+        // ssh -f returned 0, then the socket answers.
+        try writeStatus(0)
+        socket.running[socketPath] = 4242
+        await supervisor.poll()
+        guard case .connected(let pid, _) = supervisor.state else { return XCTFail("expected connected, got \(supervisor.state)") }
+        XCTAssertEqual(pid, 4242)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: supervisor.statusFileURL.path), "status file consumed")
+        XCTAssertTrue(notifier.cleared.contains("dropped-\(tunnel.id.uuidString)"))
+        XCTAssertNil(supervisor.lastError)
+        XCTAssertNotNil(supervisor.lastChecked)
     }
 
-    func testControlMasterArgumentsWhenShared() async {
-        var shared = tunnel!
-        shared.shareControlMaster = true
-        supervisor = makeSupervisor(shared)
-        environment.controlPathToReturn = "/tmp/sockets/socket-alice@tg:22"
-        let process = await startAndSpawn()
+    func testLaunchFailureFromStatusFile() async throws {
+        supervisor.start()
+        await drainMainQueue()
+        try writeStatus(255)
+        await supervisor.poll()
+        XCTAssertEqual(supervisor.state, .failed(reason: "ssh exited with status 255 — see the Terminal window"))
+        XCTAssertEqual(notifier.posted.last?.title, "Gateway did not connect")
+        XCTAssertEqual(supervisor.lastError, "ssh exited with status 255 — see the Terminal window")
+        XCTAssertEqual(socket.checks.count, 0, "no socket check after a failed launch")
+    }
+
+    func testConnectTimeout() async {
+        supervisor.connectTimeout = 0
+        supervisor.start()
+        await drainMainQueue()
+        try? await Task.sleep(nanoseconds: 10_000_000)
+        await supervisor.poll()
+        XCTAssertEqual(supervisor.state, .failed(reason: "No control socket after the connect timeout"))
+    }
+
+    func testStopSendsExitAndWaitsForSocket() async {
+        socket.running[socketPath] = 1
+        await supervisor.poll()
+        XCTAssertTrue(supervisor.state.isConnected, "adopted a running master")
+        supervisor.stop()
+        await drainMainQueue()
+        XCTAssertEqual(socket.exits, [socketPath])
+        XCTAssertNil(socket.running[socketPath])
+        XCTAssertEqual(supervisor.state, .disconnecting)
+        await supervisor.poll()
+        XCTAssertEqual(supervisor.state, .idle)
+    }
+
+    func testStopWhenNothingListensGoesIdleImmediately() async {
+        supervisor.start()
+        await drainMainQueue()
+        socket.exitSucceeds = false
+        supervisor.stop()
+        await drainMainQueue()
+        XCTAssertEqual(supervisor.state, .idle)
+    }
+
+    func testDropIsNotifiedAndNotRelaunched() async {
+        socket.running[socketPath] = 9
+        await supervisor.poll()
+        socket.running.removeAll()
+        await supervisor.poll()
+        XCTAssertEqual(supervisor.state, .dropped(reason: "Control socket is gone"))
+        XCTAssertEqual(notifier.posted.last?.title, "Gateway dropped")
+        await supervisor.poll()
+        XCTAssertEqual(launcher.launches.count, 0, "never reopens Terminal on its own")
+        // Re-established by hand in a terminal → back to connected.
+        socket.running[socketPath] = 10
+        await supervisor.poll()
+        XCTAssertTrue(supervisor.state.isConnected)
+    }
+
+    func testMarkExpectedUpOnlyWhenNotRunning() async {
+        supervisor.markExpectedUp()
+        XCTAssertEqual(supervisor.state, .dropped(reason: "Was connected when Lincoln last quit"))
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(launcher.launches.count, 1)
+    }
+
+    func testResolveFailureFails() async {
+        environment.resolved = nil
+        supervisor.start()
+        await drainMainQueue()
+        guard case .failed = supervisor.state else { return XCTFail("expected failed, got \(supervisor.state)") }
+        XCTAssertTrue(supervisor.lastError!.contains("Could not resolve ssh configuration"))
+        XCTAssertTrue(launcher.launches.isEmpty)
+    }
+
+    func testLauncherErrorFails() async {
+        launcher.launchError = TerminalLauncherError.terminalNotFound
+        supervisor.start()
+        await drainMainQueue()
+        guard case .failed = supervisor.state else { return XCTFail("expected failed, got \(supervisor.state)") }
+        XCTAssertEqual(supervisor.lastError, "Terminal.app was not found.")
+    }
+
+    func testFallbackControlPathIsLogged() async {
+        environment.resolved = ResolvedControlPath(path: "/tmp/lincoln-tests/sockets/lincoln-alice@h:22", isFromConfig: false,
+                                                   destination: SSHDestination(user: "alice", hostName: "h", port: 22, configuredControlPath: nil))
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(supervisor.controlPath?.isFromConfig, false)
+        XCTAssertTrue(launcher.last!.script.contains("ControlPath=/tmp/lincoln-tests/sockets/lincoln-alice@h:22"))
+    }
+
+    func testOpenSessionSharesMaster() async {
+        socket.running[socketPath] = 1
+        await supervisor.poll()
+        supervisor.openSession()
+        XCTAssertEqual(launcher.last?.name, "Gateway-session")
+        XCTAssertTrue(launcher.last!.script.contains("exec /usr/bin/ssh -o ControlPath=\(socketPath) -- tg"))
+        XCTAssertEqual(supervisor.sessionCommandLine(), "/usr/bin/ssh -o ControlPath=\(socketPath) -- tg")
+    }
+
+    func testEditingInvalidatesResolvedPath() async {
+        await supervisor.poll()
         XCTAssertEqual(environment.resolveCalls, 1)
-        XCTAssertEqual(environment.preparedDirectories, ["/tmp/sockets/socket-alice@tg:22"])
-        XCTAssertTrue(process.arguments.contains("ControlMaster=yes"))
-        XCTAssertTrue(process.arguments.contains("ControlPath=/tmp/sockets/socket-alice@tg:22"))
-    }
-
-    func testControlMasterFallsBackWhenPathIsNone() async {
-        var shared = tunnel!
-        shared.shareControlMaster = true
-        supervisor = makeSupervisor(shared)
-        environment.controlPathToReturn = nil
-        let process = await startAndSpawn()
-        XCTAssertTrue(process.arguments.contains("ControlMaster=no"))
-        XCTAssertTrue(supervisor.console.text.contains("will not be shared"))
-    }
-
-    func testLinkLostRestartsConnectedTunnel() async {
-        let process = await startAndSpawn()
-        process.emit("\(sentinel)\n")
-        supervisor.linkLost()
-        XCTAssertEqual(supervisor.state, .reconnecting(attempt: 1, nextAttemptAt: supervisor.state.nextAttemptAt!))
-        XCTAssertEqual(process.terminateCount, 1)
-        XCTAssertEqual(scheduler.pending.map(\.delay), [0])
-        scheduler.fireAll()
-        await drainMainQueue()
-        XCTAssertEqual(factory.processes.count, 2)
-    }
-
-    func testLinkLostIsIgnoredWhenIdle() {
-        supervisor.linkLost()
-        XCTAssertEqual(supervisor.state, .idle)
-    }
-
-    func testLaunchFailureIsReported() async {
-        struct Boom: LocalizedError { var errorDescription: String? { "forkpty failed: boom" } }
-        factory.configure = { $0.startError = Boom() }
-        supervisor = makeSupervisor(TestFixtures.tunnel(autoReconnect: false))
-        supervisor.start()
-        await drainMainQueue()
-        XCTAssertEqual(supervisor.state, .failed(reason: "forkpty failed: boom"))
-        XCTAssertTrue(supervisor.console.text.contains("failed to launch ssh"))
-    }
-
-    func testAutoReconnectOffStopsAfterDrop() async {
-        supervisor = makeSupervisor(TestFixtures.tunnel(autoReconnect: false))
-        let process = await startAndSpawn()
-        process.emit("\(sentinel)\n")
-        process.exit(status: 255)
-        guard case .failed = supervisor.state else { return XCTFail("expected failed, got \(supervisor.state)") }
-        XCTAssertTrue(scheduler.pending.isEmpty)
-    }
-
-    func testUpdatingTunnelUpdatesReconnectPolicy() async {
-        var updated = tunnel!
-        updated.autoReconnect = false
-        supervisor.tunnel = updated
-        let process = await startAndSpawn()
-        process.exit(status: 1)
-        guard case .failed = supervisor.state else { return XCTFail("expected failed, got \(supervisor.state)") }
-    }
-
-    func testInterruptAndClear() async {
-        let process = await startAndSpawn()
-        process.emit("hello\n")
-        supervisor.sendInterrupt()
-        XCTAssertEqual(process.writes, ["\u{03}"])
-        supervisor.clearConsole()
-        XCTAssertEqual(supervisor.console.text, "")
-    }
-}
-
-private extension TunnelState {
-    var nextAttemptAt: Date? {
-        if case .reconnecting(_, let date) = self { return date }
-        return nil
+        await supervisor.poll()
+        XCTAssertEqual(environment.resolveCalls, 1, "cached")
+        supervisor.invalidateControlPath()
+        await supervisor.poll()
+        XCTAssertEqual(environment.resolveCalls, 2)
     }
 }

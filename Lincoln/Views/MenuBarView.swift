@@ -49,7 +49,7 @@ public struct MenuBarView: View {
     }
 
     private var headerText: String {
-        if manager.anyNeedsAttention { return "Lincoln: a tunnel needs your input" }
+        if manager.anyNeedsAttention { return "Lincoln: a tunnel dropped or failed" }
         let connected = manager.connectedCount
         if connected == 0 { return "Lincoln: no tunnels connected" }
         return "Lincoln: \(connected) tunnel\(connected == 1 ? "" : "s") connected"

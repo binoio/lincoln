@@ -5,9 +5,6 @@ final class TunnelTests: XCTestCase {
     func testDefaultsAndDisplayName() {
         let tunnel = Tunnel(name: "", host: "tg")
         XCTAssertEqual(tunnel.displayName, "tg")
-        XCTAssertTrue(tunnel.autoReconnect)
-        XCTAssertTrue(tunnel.reconnectOnWake)
-        XCTAssertFalse(tunnel.shareControlMaster)
         XCTAssertFalse(tunnel.autoConnect)
     }
 

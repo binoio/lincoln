@@ -58,6 +58,16 @@ final class TunnelStoreTests: XCTestCase {
         }
     }
 
+    func testUnknownFieldsFromOtherVersionsAreIgnored() throws {
+        // A file written by a build with extra per-tunnel fields still loads.
+        let json = """
+        {"schemaVersion": 1, "desiredUp": [], "tunnels": [{"id": "00000000-0000-0000-0000-000000000009", "name": "x", "host": "tg",
+          "forwards": [], "extraOptions": [], "autoConnect": true, "notes": "", "shareControlMaster": true, "autoReconnect": false}]}
+        """
+        let (document, _) = try TunnelStore.decode(Data(json.utf8))
+        XCTAssertEqual(document.tunnels.first?.autoConnect, true)
+    }
+
     func testMissingSchemaVersionDefaultsToOne() throws {
         let data = Data("{\"tunnels\": [], \"desiredUp\": []}".utf8)
         let (document, migrated) = try TunnelStore.decode(data)

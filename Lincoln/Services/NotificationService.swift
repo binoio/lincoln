@@ -3,7 +3,7 @@
 //  Lincoln
 //
 //  User notifications for events that need the person's attention (a Duo
-//  prompt waiting in the console) or that they would otherwise miss (a
+//  dropped tunnel to reconnect by hand) or that they would otherwise miss (a
 //  tunnel dropped and could not come back).
 //
 

@@ -2,10 +2,10 @@
 //  SSHCommandBuilder.swift
 //  LincolnCore
 //
-//  Turns a Tunnel into a deterministic ssh argument vector. The user's
+//  Turns a Tunnel into deterministic ssh argument vectors. The user's
 //  ~/.ssh/config is still consulted by ssh (no -F), so ProxyJump, UseKeychain,
 //  IdentityFile and friends apply exactly as they do in a terminal; Lincoln
-//  only pins the options a managed tunnel needs.
+//  only pins the options a managed ControlMaster needs.
 //
 
 import Foundation
@@ -23,25 +23,38 @@ public struct SSHCommandBuilder {
         }
     }
 
-    public static let sentinelPrefix = "LINCOLN_READY_"
-
-    /// Printed by ssh's LocalCommand once authentication and forwarding
-    /// succeeded; also what makes a Lincoln-owned ssh recognizable in `ps`.
-    public static func readySentinel(for tunnelID: UUID) -> String {
-        sentinelPrefix + tunnelID.uuidString
+    /// Arguments that identify the destination the same way for every ssh
+    /// invocation (master, check, exit, interactive), so ControlPath tokens
+    /// and Match blocks resolve identically.
+    public static func destinationArguments(for tunnel: Tunnel) -> [String] {
+        var args: [String] = []
+        if let port = tunnel.port {
+            args += ["-p", String(port)]
+        }
+        if let user = tunnel.user?.trimmingCharacters(in: .whitespaces), !user.isEmpty {
+            args += ["-l", user]
+        }
+        args += ["--", tunnel.trimmedHost]
+        return args
     }
 
-    /// Arguments for ssh (executable excluded).
-    /// - Parameter controlPath: the resolved ControlPath to own when
-    ///   `tunnel.shareControlMaster` is set; nil disables multiplexing.
-    public static func arguments(for tunnel: Tunnel, controlPath: String? = nil, environment: Environment = Environment()) -> [String] {
-        var args: [String] = ["-N"]
+    /// `ssh -G` arguments used to resolve the effective configuration.
+    public static func configDumpArguments(for tunnel: Tunnel) -> [String] {
+        ["-G"] + destinationArguments(for: tunnel)
+    }
+
+    /// The command that runs in Terminal.app: a backgrounding ControlMaster
+    /// carrying the tunnel's forwards. Duo/passphrase prompts happen there;
+    /// after authentication ssh forks away and the window can be closed.
+    public static func masterArguments(for tunnel: Tunnel, controlPath: String, environment: Environment = Environment()) -> [String] {
+        var args: [String] = ["-M", "-N", "-f"]
 
         func option(_ key: String, _ value: String) {
             args.append("-o")
             args.append("\(key)=\(value)")
         }
 
+        option("ControlPath", controlPath)
         // Forwards are exactly what Lincoln shows, even if the alias already
         // carries DynamicForward/LocalForward lines in ssh_config.
         option("ClearAllForwardings", "yes")
@@ -51,26 +64,7 @@ public struct SSHCommandBuilder {
         option("NumberOfPasswordPrompts", "0")
         option("ServerAliveInterval", String(environment.serverAliveInterval))
         option("ServerAliveCountMax", String(environment.serverAliveCountMax))
-        option("PermitLocalCommand", "yes")
-        option("LocalCommand", "echo \(readySentinel(for: tunnel.id))")
 
-        if tunnel.shareControlMaster, let controlPath = controlPath, !controlPath.isEmpty, controlPath != "none" {
-            option("ControlMaster", "yes")
-            option("ControlPath", controlPath)
-            option("ControlPersist", "no")
-        } else {
-            option("ControlMaster", "no")
-            option("ControlPath", "none")
-        }
-
-        if let port = tunnel.port {
-            args.append("-p")
-            args.append(String(port))
-        }
-        if let user = tunnel.user?.trimmingCharacters(in: .whitespaces), !user.isEmpty {
-            args.append("-l")
-            args.append(user)
-        }
         if let identity = tunnel.identityFile?.trimmingCharacters(in: .whitespaces), !identity.isEmpty {
             args.append("-i")
             args.append(identity)
@@ -84,16 +78,59 @@ public struct SSHCommandBuilder {
             guard !key.isEmpty else { continue }
             option(key, extra.value.trimmingCharacters(in: .whitespaces))
         }
-        args.append("--")
-        args.append(tunnel.trimmedHost)
+        args.append(contentsOf: destinationArguments(for: tunnel))
         return args
     }
 
-    /// Shell-quoted command line for logs and the console header.
-    public static func commandLine(for tunnel: Tunnel, controlPath: String? = nil, environment: Environment = Environment()) -> String {
-        ([environment.sshExecutable] + arguments(for: tunnel, controlPath: controlPath, environment: environment))
-            .map(shellQuoted)
-            .joined(separator: " ")
+    /// `ssh -O check`: exit 0 and "Master running (pid=N)" when the master is up.
+    public static func checkArguments(for tunnel: Tunnel, controlPath: String) -> [String] {
+        ["-O", "check", "-o", "ControlPath=\(controlPath)"] + destinationArguments(for: tunnel)
+    }
+
+    /// `ssh -O exit`: asks the master to close all sessions and quit.
+    public static func exitArguments(for tunnel: Tunnel, controlPath: String) -> [String] {
+        ["-O", "exit", "-o", "ControlPath=\(controlPath)"] + destinationArguments(for: tunnel)
+    }
+
+    /// An interactive session that reuses the master (no second Duo prompt).
+    public static func sessionArguments(for tunnel: Tunnel, controlPath: String) -> [String] {
+        ["-o", "ControlPath=\(controlPath)"] + destinationArguments(for: tunnel)
+    }
+
+    /// Parses the pid out of `ssh -O check` output ("Master running (pid=123)").
+    public static func masterPID(fromCheckOutput output: String) -> Int32? {
+        guard let range = output.range(of: "pid=") else { return nil }
+        let digits = output[range.upperBound...].prefix { $0.isNumber }
+        return Int32(digits)
+    }
+
+    /// Shell-quoted command line for display and for the Terminal script.
+    public static func commandLine(executable: String, arguments: [String]) -> String {
+        ([executable] + arguments).map(shellQuoted).joined(separator: " ")
+    }
+
+    /// The `.command` script Terminal.app runs. It records ssh's exit status
+    /// in `statusFile` so Lincoln learns about failures without owning a tty.
+    public static func terminalScript(for tunnel: Tunnel, controlPath: String, statusFile: String, environment: Environment = Environment()) -> String {
+        let command = commandLine(executable: environment.sshExecutable, arguments: masterArguments(for: tunnel, controlPath: controlPath, environment: environment))
+        let name = shellQuoted(tunnel.displayName)
+        let destination = shellQuoted(tunnel.destinationSummary)
+        let status = shellQuoted(statusFile)
+        return """
+        #!/bin/zsh
+        # Generated by Lincoln. Runs the ControlMaster for one tunnel; safe to close
+        # this window once ssh has backgrounded itself.
+        printf '\\e[1mLincoln: connecting %s (%s)\\e[0m\\n' \(name) \(destination)
+        \(command)
+        ssh_status=$?
+        printf '%s\\n' "$ssh_status" > \(status)
+        if [ "$ssh_status" -eq 0 ]; then
+            printf '\\e[32mLincoln: tunnel is up.\\e[0m The control master keeps running; you can close this window.\\n'
+        else
+            printf '\\e[31mLincoln: ssh exited with status %s.\\e[0m\\n' "$ssh_status"
+        fi
+
+        """
     }
 
     /// An equivalent ssh_config block the user can paste into their own

@@ -2,10 +2,10 @@
 <p>Initial release of <strong>Lincoln</strong> — the macOS GUI Dock and Menu Bar app for establishing and maintaining SSH tunnels through a gateway.</p>
 <ul>
   <li><strong>Tunnel Management</strong>: Create, import, connect, disconnect, reconfigure and reorder SOCKS proxies and local/remote port forwards from the main window or the menu bar.</li>
-  <li><strong>Automatic Reconnection</strong>: Dropped links are re-established with exponential backoff; network changes and wake from sleep restart connected tunnels immediately.</li>
-  <li><strong>In-App Console</strong>: ssh runs under a pseudo-terminal, so Duo passcode/push prompts, key passphrases and host-key confirmations are answered inside Lincoln.</li>
+  <li><strong>Terminal.app Console</strong>: Connecting opens a Terminal window running ssh as a backgrounding ControlMaster; Duo, passphrase and host-key prompts are answered there.</li>
+  <li><strong>Shared Connections</strong>: Tunnels use the ControlPath from your ssh config, so terminal sessions and ProxyJump hops reuse them without a second Duo prompt.</li>
+  <li><strong>Drop Detection</strong>: Control sockets are polled and re-checked on network changes and wake; a dropped tunnel is flagged and notified, never reconnected unasked.</li>
   <li><strong>Non-Destructive Import</strong>: Reads <code>~/.ssh/config</code> to offer host aliases and existing forwards; never writes your ssh configuration.</li>
-  <li><strong>Durable State</strong>: Tunnels and their desired state survive reinstalling the app; orphaned ssh processes are cleaned up at launch.</li>
-  <li><strong>ControlMaster Sharing</strong>: Optionally let terminal ssh sessions and ProxyJump hops reuse a tunnel's authenticated connection.</li>
+  <li><strong>Durable State</strong>: Tunnels and their desired state survive reinstalling the app; masters keep running across Lincoln restarts.</li>
   <li><strong>Sparkle 2 Updates</strong>: Integrated automatic updates.</li>
 </ul>

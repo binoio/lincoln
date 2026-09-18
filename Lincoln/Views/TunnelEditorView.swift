@@ -18,6 +18,48 @@ struct TunnelEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
+                Section("Status") {
+                    LabeledContent("State:") {
+                        Text(supervisor.state.label)
+                    }
+                    if case .connected(let pid, let since) = supervisor.state {
+                        LabeledContent("Control master:") {
+                            Text(pid.map { "pid \($0)" } ?? "running")
+                                .font(.system(.body, design: .monospaced))
+                        }
+                        LabeledContent("Connected since:") {
+                            Text(since.formatted(date: .abbreviated, time: .shortened))
+                        }
+                    }
+                    if let resolved = supervisor.controlPath {
+                        LabeledContent("Control socket:") {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(resolved.path)
+                                    .font(.system(.caption, design: .monospaced))
+                                    .textSelection(.enabled)
+                                Text(resolved.isFromConfig
+                                     ? "From your ssh config — terminal sessions and ProxyJump hops through this host share the tunnel."
+                                     : "Your ssh config has no ControlPath for this host, so Lincoln uses its own socket. Terminal sessions will not share it.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    if let checked = supervisor.lastChecked {
+                        LabeledContent("Last checked:") {
+                            Text(checked.formatted(date: .omitted, time: .standard))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if !supervisor.lastCommandLine.isEmpty {
+                        LabeledContent("Last launch:") {
+                            Text(supervisor.lastCommandLine)
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                        }
+                    }
+                }
+
                 Section("Tunnel") {
                     TextField("Name:", text: $editor.draft.name, prompt: Text("Gateway SOCKS"))
                         .textFieldStyle(.roundedBorder)
@@ -36,7 +78,7 @@ struct TunnelEditorView: View {
                             .autocorrectionDisabled()
                         Button("Choose…") { chooseIdentityFile() }
                     }
-                    Text("Only SSH keys are used (PasswordAuthentication is disabled). Duo and other keyboard-interactive prompts appear in the Console.")
+                    Text("Only SSH keys are used (PasswordAuthentication is disabled). Connecting opens a Terminal.app window where Duo and passphrase prompts are answered; ssh then backgrounds itself as a control master and the window can be closed.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -52,15 +94,10 @@ struct TunnelEditorView: View {
                 }
 
                 Section("Behavior") {
-                    Toggle("Connect when Lincoln launches", isOn: $editor.draft.autoConnect)
-                    Toggle("Reconnect automatically if the connection drops", isOn: $editor.draft.autoReconnect)
-                    Toggle("Restart after the Mac wakes from sleep", isOn: $editor.draft.reconnectOnWake)
-                    Toggle("Share connection with terminal ssh (act as ControlMaster)", isOn: $editor.draft.shareControlMaster)
-                    if editor.draft.shareControlMaster {
-                        Text("Uses the ControlPath ssh resolves for this host (see `ssh -G`). Terminal sessions and ProxyJump hops through this host reuse Lincoln's authenticated connection and skip a second Duo prompt.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Toggle("Connect when Lincoln launches (opens Terminal)", isOn: $editor.draft.autoConnect)
+                    Text("A tunnel that drops is shown as dropped and never reconnected on its own, since each connection may cost a Duo push.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Section {
@@ -80,13 +117,13 @@ struct TunnelEditorView: View {
                 }
 
                 Section("Command preview") {
-                    Text(editor.commandPreview)
+                    Text(editor.commandPreview(controlPath: supervisor.controlPath?.path))
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
                         .foregroundColor(.secondary)
                     HStack {
                         Button("Copy Command") {
-                            copy(editor.commandPreview)
+                            copy(editor.commandPreview(controlPath: supervisor.controlPath?.path))
                         }
                         Button("Copy ssh_config Snippet") {
                             copy(editor.configSnippet)
@@ -108,7 +145,7 @@ struct TunnelEditorView: View {
                         .foregroundColor(.orange)
                         .lineLimit(2)
                 } else if editor.hasChanges {
-                    Label(supervisor.state.isActive ? "Saving reconnects the tunnel with the new settings." : "Unsaved changes", systemImage: "pencil.circle")
+                    Label(supervisor.state.isActive ? "Changes apply the next time the tunnel connects." : "Unsaved changes", systemImage: "pencil.circle")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else {

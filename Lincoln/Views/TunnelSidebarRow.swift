@@ -21,10 +21,10 @@ struct TunnelSidebarRow: View {
                     .lineLimit(1)
             }
             Spacer()
-            if supervisor.needsAttention {
-                Image(systemName: "exclamationmark.bubble.fill")
-                    .foregroundColor(.purple)
-                    .help("Waiting for your input in the console")
+            if supervisor.state.needsAttention {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.orange)
+                    .help(supervisor.state.detail ?? supervisor.state.label)
             }
         }
         .contentShape(Rectangle())

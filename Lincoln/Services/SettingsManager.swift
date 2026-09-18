@@ -33,18 +33,16 @@ final class SettingsManager: ObservableObject {
     enum Key {
         static let showMenuBarItem = "lincoln.showMenuBarItem"
         static let hideDockIcon = "lincoln.hideDockIcon"
-        static let restoreConnectionsOnLaunch = "lincoln.restoreConnectionsOnLaunch"
         static let notificationsEnabled = "lincoln.notificationsEnabled"
         static let sshExecutable = "lincoln.sshExecutable"
         static let extraPath = "lincoln.extraPath"
-        static let sshAuthSock = "lincoln.sshAuthSock"
         static let serverAliveInterval = "lincoln.serverAliveInterval"
         static let serverAliveCountMax = "lincoln.serverAliveCountMax"
         static let hasCompletedFirstRun = "lincoln.hasCompletedFirstRun"
 
         static var all: [String] {
-            [showMenuBarItem, hideDockIcon, restoreConnectionsOnLaunch, notificationsEnabled, sshExecutable,
-             extraPath, sshAuthSock, serverAliveInterval, serverAliveCountMax, hasCompletedFirstRun]
+            [showMenuBarItem, hideDockIcon, notificationsEnabled, sshExecutable,
+             extraPath, serverAliveInterval, serverAliveCountMax, hasCompletedFirstRun]
         }
     }
 
@@ -77,10 +75,6 @@ final class SettingsManager: ObservableObject {
         }
     }
 
-    @Published var restoreConnectionsOnLaunch: Bool {
-        didSet { defaults.set(restoreConnectionsOnLaunch, forKey: Key.restoreConnectionsOnLaunch) }
-    }
-
     @Published var notificationsEnabled: Bool {
         didSet { defaults.set(notificationsEnabled, forKey: Key.notificationsEnabled) }
     }
@@ -91,10 +85,6 @@ final class SettingsManager: ObservableObject {
 
     @Published var extraPath: String {
         didSet { defaults.set(extraPath, forKey: Key.extraPath) }
-    }
-
-    @Published var sshAuthSock: String {
-        didSet { defaults.set(sshAuthSock, forKey: Key.sshAuthSock) }
     }
 
     @Published var serverAliveInterval: Int {
@@ -127,11 +117,9 @@ final class SettingsManager: ObservableObject {
         self.loginItem = loginItem
         showMenuBarItem = defaults.object(forKey: Key.showMenuBarItem) as? Bool ?? true
         hideDockIcon = defaults.bool(forKey: Key.hideDockIcon)
-        restoreConnectionsOnLaunch = defaults.object(forKey: Key.restoreConnectionsOnLaunch) as? Bool ?? true
         notificationsEnabled = defaults.object(forKey: Key.notificationsEnabled) as? Bool ?? true
         sshExecutable = defaults.string(forKey: Key.sshExecutable) ?? SettingsManager.defaultSSHExecutable
         extraPath = defaults.string(forKey: Key.extraPath) ?? SettingsManager.defaultExtraPath
-        sshAuthSock = defaults.string(forKey: Key.sshAuthSock) ?? ""
         serverAliveInterval = defaults.object(forKey: Key.serverAliveInterval) as? Int ?? 30
         serverAliveCountMax = defaults.object(forKey: Key.serverAliveCountMax) as? Int ?? 3
         launchAtLogin = loginItem.isEnabled
@@ -154,7 +142,6 @@ final class SettingsManager: ObservableObject {
     func resetSSHDefaults() {
         sshExecutable = SettingsManager.defaultSSHExecutable
         extraPath = SettingsManager.defaultExtraPath
-        sshAuthSock = ""
         serverAliveInterval = 30
         serverAliveCountMax = 3
     }

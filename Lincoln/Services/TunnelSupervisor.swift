@@ -2,75 +2,65 @@
 //  TunnelSupervisor.swift
 //  Lincoln
 //
-//  Runs one tunnel: drives the LincolnCore state machine, owns the ssh
-//  process, feeds the console, detects prompts and the ready sentinel, and
-//  schedules reconnect backoff.
+//  Runs one tunnel: launches its ControlMaster in Terminal.app, watches the
+//  control socket, and drives the LincolnCore state machine.
 //
 
 import Foundation
 import Combine
 import LincolnCore
 
-/// Schedules a callback after a delay and returns a cancel closure.
-/// Injected so tests can fire backoff timers deterministically.
-typealias BackoffScheduler = (_ delay: TimeInterval, _ action: @escaping @MainActor () -> Void) -> (() -> Void)
-
 @MainActor
 final class TunnelSupervisor: ObservableObject, Identifiable {
     nonisolated let id: UUID
 
-    @Published var tunnel: Tunnel {
-        didSet { machine.autoReconnect = tunnel.autoReconnect }
-    }
+    @Published var tunnel: Tunnel
     @Published private(set) var state: TunnelState = .idle
-    @Published private(set) var console = ConsoleBuffer()
-    @Published private(set) var currentPrompt: DetectedPrompt?
-    @Published private(set) var needsAttention = false
+    @Published private(set) var controlPath: ResolvedControlPath?
     @Published private(set) var lastCommandLine: String = ""
+    @Published private(set) var lastScriptURL: URL?
     @Published private(set) var lastError: String?
+    @Published private(set) var lastChecked: Date?
 
     var onStateChange: ((TunnelSupervisor) -> Void)?
 
-    private var machine: TunnelStateMachine
-    private var process: TunnelProcess?
-    private var cancelBackoff: (() -> Void)?
-    private var promptCheck: (() -> Void)?
-    private var spawnGeneration = 0
-    /// Output since the current ssh started; the sentinel is searched here so
-    /// a previous run's sentinel can never mark a new run as connected.
-    private var runOutput = ""
-    private var sentinelSeenThisRun = false
+    /// Give up on a launch when no socket appears within this long (Duo
+    /// pushes expire well before).
+    var connectTimeout: TimeInterval = 180
 
-    private let processFactory: TunnelProcessFactory
+    private var machine: TunnelStateMachine
+    private let launcher: TerminalLaunching
+    private let socket: ControlSocketChecking
     private let environment: SSHEnvironmentProviding
     private let notifier: Notifying?
-    private let scheduler: BackoffScheduler
-    /// How long the output must stay quiet before a trailing ":"/"?" counts as a prompt.
-    var promptQuietInterval: TimeInterval = 0.3
+    private let stateDirectory: URL
+    private let fileManager: FileManager
+    private var isPolling = false
+    private var launchGeneration = 0
 
     init(
         tunnel: Tunnel,
-        processFactory: TunnelProcessFactory,
+        launcher: TerminalLaunching,
+        socket: ControlSocketChecking,
         environment: SSHEnvironmentProviding,
         notifier: Notifying? = nil,
-        policy: ReconnectPolicy = .default,
-        scheduler: BackoffScheduler? = nil
+        stateDirectory: URL = TunnelStore.defaultDirectory().appendingPathComponent("state", isDirectory: true),
+        fileManager: FileManager = .default,
+        now: @escaping () -> Date = Date.init
     ) {
         self.id = tunnel.id
         self.tunnel = tunnel
-        self.processFactory = processFactory
+        self.launcher = launcher
+        self.socket = socket
         self.environment = environment
         self.notifier = notifier
-        self.scheduler = scheduler ?? TunnelSupervisor.dispatchScheduler
-        self.machine = TunnelStateMachine(policy: policy, autoReconnect: tunnel.autoReconnect)
+        self.stateDirectory = stateDirectory
+        self.fileManager = fileManager
+        self.machine = TunnelStateMachine(now: now)
     }
 
-    nonisolated static let dispatchScheduler: BackoffScheduler = { delay, action in
-        let item = DispatchWorkItem {
-            MainActor.assumeIsolated { action() }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
-        return { item.cancel() }
+    var statusFileURL: URL {
+        stateDirectory.appendingPathComponent("\(id.uuidString).status")
     }
 
     // MARK: - Intents
@@ -79,7 +69,6 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
         guard tunnel.isValid else {
             let reason = tunnel.validationErrors.joined(separator: " ")
             lastError = reason
-            console.appendSystemLine("— cannot connect: \(reason)")
             LogStore.log(level: .error, category: "Tunnel", message: "\(tunnel.displayName): invalid configuration", details: reason)
             return
         }
@@ -91,33 +80,56 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
         handle(.stop)
     }
 
-    func restart() {
-        handle(.linkLost)
+    /// Lincoln launched and this tunnel was up when it last quit.
+    func markExpectedUp() {
+        handle(.restoreExpectedUp)
     }
 
-    /// Sends a line to ssh (the user's answer to a prompt).
-    func submitInput(_ text: String) {
-        guard let process = process, process.isRunning else { return }
-        process.write(text + "\n")
-        promptCheck?()
-        promptCheck = nil
-        // The pty echoes non-secret answers back, completing the prompt line.
-        currentPrompt = nil
-        handle(.inputSubmitted)
+    /// Runs `ssh -O check` (and, while connecting, reads the launch status
+    /// file) and feeds the result to the state machine.
+    func poll() async {
+        guard !isPolling else { return }
+        isPolling = true
+        defer { isPolling = false }
+
+        guard let resolved = await resolvedControlPath() else { return }
+
+        if case .connecting(let since) = state {
+            if let status = readLaunchStatus() {
+                removeLaunchStatus()
+                handle(.launchExited(status: status))
+                if case .failed = state { return }
+            }
+            if Date().timeIntervalSince(since) > connectTimeout {
+                handle(.connectTimedOut)
+                return
+            }
+        }
+
+        let status = await socket.check(tunnel, controlPath: resolved.path)
+        lastChecked = Date()
+        handle(status.isRunning ? .masterRunning(pid: status.pid) : .masterMissing)
     }
 
-    func sendInterrupt() {
-        process?.write("\u{03}")
+    /// Command line for an interactive session that reuses the master.
+    func sessionCommandLine() -> String? {
+        guard let path = controlPath?.path else { return nil }
+        return SSHCommandBuilder.commandLine(
+            executable: environment.builderEnvironment.sshExecutable,
+            arguments: SSHCommandBuilder.sessionArguments(for: tunnel, controlPath: path)
+        )
     }
 
-    func clearConsole() {
-        console.clear()
-    }
-
-    /// Fold external link events (network change, wake) in.
-    func linkLost() {
-        guard state.isConnected || (state.isActive && !state.isRunningProcess) else { return }
-        handle(.linkLost)
+    /// Opens a Terminal window with an interactive session on the tunnel's
+    /// host, sharing the master so no second Duo prompt is needed.
+    func openSession() {
+        guard let command = sessionCommandLine() else { return }
+        let script = "#!/bin/zsh\n# Generated by Lincoln: interactive session sharing the \(tunnel.displayName) control master.\nexec \(command)\n"
+        do {
+            try launcher.launch(script: script, name: "\(tunnel.displayName)-session")
+        } catch {
+            LogStore.log(level: .error, category: "Terminal", message: "\(tunnel.displayName): could not open session", details: error.localizedDescription)
+        }
     }
 
     // MARK: - State machine plumbing
@@ -128,8 +140,11 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
         state = next
         if previous != next {
             LogStore.log(level: TunnelSupervisor.logLevel(for: next), category: "Tunnel", message: "\(tunnel.displayName): \(previous.label) → \(next.label)")
-            if case .failed(let reason) = next { lastError = reason }
-            if case .connected = next { lastError = nil }
+            switch next {
+            case .failed(let reason), .dropped(let reason): lastError = reason
+            case .connected: lastError = nil
+            default: break
+            }
         }
         for effect in effects {
             perform(effect)
@@ -141,168 +156,95 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
 
     private func perform(_ effect: TunnelEffect) {
         switch effect {
-        case .spawn:
-            spawn()
-        case .kill:
-            if let process = process, process.isRunning {
-                process.terminate()
-            } else {
-                // Nothing to kill (stop arrived while ssh -G was still
-                // resolving, or the launch failed): complete the transition now.
-                process = nil
-                handle(.processExited(status: 0, output: ""))
+        case .launchInTerminal:
+            launchGeneration += 1
+            let generation = launchGeneration
+            Task { @MainActor in
+                await launchInTerminal(generation: generation)
             }
-        case .scheduleBackoff(let delay):
-            cancelBackoff?()
-            let generation = spawnGeneration
-            cancelBackoff = scheduler(delay) { [weak self] in
-                guard let self = self, self.spawnGeneration == generation else { return }
-                self.cancelBackoff = nil
-                self.handle(.backoffElapsed)
+        case .sendExit:
+            Task { @MainActor in
+                await sendExit()
             }
-        case .cancelBackoff:
-            cancelBackoff?()
-            cancelBackoff = nil
-        case .notifyAttention(let prompt):
-            needsAttention = true
-            notifier?.post(identifier: "attention-\(id.uuidString)", title: "\(tunnel.displayName) needs your input", body: prompt)
-        case .clearAttention:
-            needsAttention = false
-            currentPrompt = nil
-            notifier?.clear(identifier: "attention-\(id.uuidString)")
         case .notifyConnected:
-            console.appendSystemLine("— connected \(TunnelSupervisor.timestamp())")
             notifier?.clear(identifier: "dropped-\(id.uuidString)")
-        case .notifyDisconnected(let reason):
-            console.appendSystemLine("— disconnected: \(reason)")
-            notifier?.post(identifier: "dropped-\(id.uuidString)", title: "\(tunnel.displayName) disconnected", body: reason)
+            notifier?.clear(identifier: "failed-\(id.uuidString)")
+        case .notifyDropped(let reason):
+            notifier?.post(identifier: "dropped-\(id.uuidString)", title: "\(tunnel.displayName) dropped", body: "\(reason). Connect again from Lincoln when you are ready.")
+        case .notifyFailed(let reason):
+            notifier?.post(identifier: "failed-\(id.uuidString)", title: "\(tunnel.displayName) did not connect", body: reason)
         case .log(let message):
-            console.appendSystemLine("— \(message)")
             LogStore.log(level: .info, category: "Tunnel", message: "\(tunnel.displayName): \(message)")
         }
     }
 
-    private func spawn() {
-        spawnGeneration += 1
-        let generation = spawnGeneration
-        let snapshot = tunnel
-        Task { @MainActor in
-            var controlPath: String?
-            if snapshot.shareControlMaster {
-                controlPath = await environment.resolveControlPath(for: snapshot)
-                if let path = controlPath {
-                    do {
-                        try environment.prepareControlPathDirectory(path)
-                    } catch {
-                        LogStore.log(level: .warning, category: "Tunnel", message: "\(snapshot.displayName): could not prepare ControlPath directory", details: error.localizedDescription)
-                        controlPath = nil
-                    }
-                } else {
-                    console.appendSystemLine("— ControlPath is 'none' for \(snapshot.trimmedHost); connection will not be shared")
-                }
-            }
-            // The user may have stopped us while ssh -G ran.
-            guard generation == spawnGeneration, case .connecting = state, process == nil || process?.isRunning == false else { return }
-            launchProcess(for: snapshot, controlPath: controlPath, generation: generation)
-        }
-    }
-
-    private func launchProcess(for snapshot: Tunnel, controlPath: String?, generation: Int) {
-        let builderEnvironment = environment.builderEnvironment
-        let arguments = SSHCommandBuilder.arguments(for: snapshot, controlPath: controlPath, environment: builderEnvironment)
-        lastCommandLine = SSHCommandBuilder.commandLine(for: snapshot, controlPath: controlPath, environment: builderEnvironment)
-        runOutput = ""
-        sentinelSeenThisRun = false
-        currentPrompt = nil
-        console.appendSystemLine("— \(TunnelSupervisor.timestamp()) \(lastCommandLine)")
-        LogStore.log(level: .info, category: "SSH", message: "\(snapshot.displayName): launching ssh", details: lastCommandLine)
-
-        let process = processFactory.makeProcess(
-            executable: builderEnvironment.sshExecutable,
-            arguments: arguments,
-            environment: environment.processEnvironment()
-        )
-        process.onOutput = { [weak self] data in
-            guard let self = self, self.spawnGeneration == generation else { return }
-            self.handleOutput(data)
-        }
-        process.onExit = { [weak self] status in
-            guard let self = self, self.spawnGeneration == generation else { return }
-            self.handleExit(status: status)
-        }
-        self.process = process
-        do {
-            try process.start()
-        } catch {
-            let message = error.localizedDescription
-            console.appendSystemLine("— failed to launch ssh: \(message)")
-            LogStore.log(level: .error, category: "SSH", message: "\(snapshot.displayName): failed to launch ssh", details: message)
-            self.process = nil
-            handle(.processExited(status: -1, output: message))
-        }
-    }
-
-    private func handleOutput(_ data: Data) {
-        let text = ANSIStripper.strip(String(decoding: data, as: UTF8.self))
-        guard !text.isEmpty else { return }
-        console.append(text)
-        runOutput.append(text)
-        if runOutput.count > 20_000 {
-            runOutput = String(runOutput.suffix(10_000))
-        }
-
-        if !sentinelSeenThisRun, PromptDetector.containsReadySentinel(runOutput, tunnelID: id) {
-            sentinelSeenThisRun = true
-            promptCheck?()
-            promptCheck = nil
-            handle(.readySeen)
+    private func launchInTerminal(generation: Int) async {
+        guard let resolved = await resolvedControlPath(refresh: true) else {
+            handle(.launchFailed(reason: "Could not resolve ssh configuration for \(tunnel.trimmedHost) (see Diagnostic Logs)"))
             return
         }
-
-        // Prompts end without a newline; wait for the output to go quiet
-        // before deciding the tail is a question rather than a partial line.
-        promptCheck?()
-        promptCheck = nil
-        guard !state.isConnected, !console.tail.isEmpty else { return }
-        promptCheck = scheduler(promptQuietInterval) { [weak self] in
-            guard let self = self else { return }
-            self.promptCheck = nil
-            self.evaluatePrompt()
+        guard generation == launchGeneration, state.isConnecting else { return }
+        do {
+            try environment.prepareControlPathDirectory(resolved.path)
+            try fileManager.createDirectory(at: stateDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            removeLaunchStatus()
+            let builderEnvironment = environment.builderEnvironment
+            lastCommandLine = SSHCommandBuilder.commandLine(
+                executable: builderEnvironment.sshExecutable,
+                arguments: SSHCommandBuilder.masterArguments(for: tunnel, controlPath: resolved.path, environment: builderEnvironment)
+            )
+            let script = SSHCommandBuilder.terminalScript(for: tunnel, controlPath: resolved.path, statusFile: statusFileURL.path, environment: builderEnvironment)
+            lastScriptURL = try launcher.launch(script: script, name: tunnel.displayName)
+            LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): launched control master in Terminal", details: lastCommandLine)
+            if !resolved.isFromConfig {
+                LogStore.log(level: .warning, category: "SSH", message: "\(tunnel.displayName): ssh config has no ControlPath for this host; using \(resolved.path). Terminal sessions will not share it unless they pass the same ControlPath.")
+            }
+        } catch {
+            LogStore.log(level: .error, category: "Terminal", message: "\(tunnel.displayName): could not launch Terminal", details: error.localizedDescription)
+            handle(.launchFailed(reason: error.localizedDescription))
         }
     }
 
-    private func evaluatePrompt() {
-        guard state.isRunningProcess, !state.isConnected else { return }
-        guard let prompt = PromptDetector.detect(lineTail: console.tail) else { return }
-        if currentPrompt == prompt { return }
-        currentPrompt = prompt
-        handle(.promptDetected(prompt.text))
+    private func sendExit() async {
+        guard let resolved = await resolvedControlPath() else {
+            handle(.masterMissing)
+            return
+        }
+        let accepted = await socket.requestExit(tunnel, controlPath: resolved.path)
+        if !accepted {
+            // Nothing was listening: treat as already gone.
+            handle(.masterMissing)
+        }
     }
 
-    private func handleExit(status: Int32) {
-        promptCheck?()
-        promptCheck = nil
-        process = nil
-        let recent = console.recentText(lineCount: 20)
-        console.appendSystemLine("— ssh exited (\(status)) \(TunnelSupervisor.timestamp())")
-        if PromptDetector.containsAuthenticationFailure(runOutput) {
-            LogStore.log(level: .error, category: "SSH", message: "\(tunnel.displayName): authentication failed", details: recent)
+    private func resolvedControlPath(refresh: Bool = false) async -> ResolvedControlPath? {
+        if !refresh, let cached = controlPath { return cached }
+        let resolved = await environment.resolveControlPath(for: tunnel)
+        if let resolved = resolved {
+            controlPath = resolved
         }
-        handle(.processExited(status: status, output: runOutput.isEmpty ? recent : runOutput))
+        return resolved
+    }
+
+    /// Tunnel edits invalidate the resolved path (host/user/port may differ).
+    func invalidateControlPath() {
+        controlPath = nil
+    }
+
+    private func readLaunchStatus() -> Int32? {
+        guard let text = try? String(contentsOf: statusFileURL, encoding: .utf8) else { return nil }
+        return Int32(text.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private func removeLaunchStatus() {
+        try? fileManager.removeItem(at: statusFileURL)
     }
 
     private static func logLevel(for state: TunnelState) -> LogLevel {
         switch state {
         case .connected: return .success
-        case .failed: return .error
-        case .waitingForInput, .reconnecting, .restarting: return .warning
+        case .failed, .dropped: return .error
         default: return .info
         }
-    }
-
-    private static func timestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        return formatter.string(from: Date())
     }
 }

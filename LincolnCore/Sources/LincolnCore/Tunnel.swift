@@ -4,7 +4,9 @@
 //
 //  The persisted description of one SSH tunnel. Lincoln never edits
 //  ~/.ssh/config; a Tunnel references a host alias (or hostname) and layers
-//  its own forwards and options on top via ssh command-line arguments.
+//  its own forwards and options on top via ssh command-line arguments. At
+//  run time a tunnel is an ssh ControlMaster: its control socket is what
+//  Lincoln starts (in Terminal.app), checks and stops.
 //
 
 import Foundation
@@ -221,17 +223,8 @@ public struct Tunnel: Codable, Hashable, Identifiable {
     public var identityFile: String?
     public var forwards: [Forward]
     public var extraOptions: [SSHOption]
-    /// Act as the ControlMaster for this host so terminal `ssh` sessions
-    /// (including ProxyJump hops) reuse this authenticated connection.
-    public var shareControlMaster: Bool
-    /// Connect when Lincoln launches.
+    /// Open a Terminal window and connect when Lincoln launches.
     public var autoConnect: Bool
-    /// Re-establish the tunnel after it drops. Each retry may trigger a new
-    /// Duo push, so this is a per-tunnel choice.
-    public var autoReconnect: Bool
-    /// Restart the tunnel when the Mac wakes from sleep instead of waiting
-    /// for ServerAlive to notice the dead link.
-    public var reconnectOnWake: Bool
     public var notes: String
 
     public init(
@@ -243,10 +236,7 @@ public struct Tunnel: Codable, Hashable, Identifiable {
         identityFile: String? = nil,
         forwards: [Forward] = [],
         extraOptions: [SSHOption] = [],
-        shareControlMaster: Bool = false,
         autoConnect: Bool = false,
-        autoReconnect: Bool = true,
-        reconnectOnWake: Bool = true,
         notes: String = ""
     ) {
         self.id = id
@@ -257,10 +247,7 @@ public struct Tunnel: Codable, Hashable, Identifiable {
         self.identityFile = identityFile
         self.forwards = forwards
         self.extraOptions = extraOptions
-        self.shareControlMaster = shareControlMaster
         self.autoConnect = autoConnect
-        self.autoReconnect = autoReconnect
-        self.reconnectOnWake = reconnectOnWake
         self.notes = notes
     }
 

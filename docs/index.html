@@ -207,12 +207,16 @@
                 <p>Define a tunnel once — host alias, SOCKS proxy, local and remote forwards — then connect and disconnect it with one click from the menu bar.</p>
             </div>
             <div class="feature-card">
-                <h3>🔁 Kept Alive</h3>
-                <p>Dropped links are noticed by keepalives, network changes and wake from sleep, then re-established with backoff. Auto-reconnect is a per-tunnel choice.</p>
+                <h3>🖥️ Terminal Is the Console</h3>
+                <p>Connecting opens a Terminal.app window where Duo, passphrases and host keys are answered with your own shell, keys and agent. ssh then backgrounds itself as a ControlMaster.</p>
             </div>
             <div class="feature-card">
-                <h3>🔐 Keys Only, Duo in the App</h3>
-                <p>Password logins are disabled. Duo passcode and push prompts, key passphrases and host-key checks appear in a per-tunnel console with a notification.</p>
+                <h3>🔗 Shared With Your Terminal</h3>
+                <p>Tunnels use the ControlPath from your ssh config, so <code>ssh della</code> through the gateway reuses them — no second Duo prompt. Tunnels started by hand show up too.</p>
+            </div>
+            <div class="feature-card">
+                <h3>👀 Watched, Not Babysat</h3>
+                <p>Control sockets are checked continuously and after network changes or wake. A dropped tunnel is flagged and notified, never reconnected behind your back.</p>
             </div>
             <div class="feature-card">
                 <h3>🧭 Reads Your ssh config</h3>
@@ -220,7 +224,7 @@
             </div>
             <div class="feature-card">
                 <h3>💾 Durable &amp; Idempotent</h3>
-                <p>Tunnels and their desired state live in Application Support. Reinstall a year later and pick up exactly where you left off.</p>
+                <p>Tunnels and their desired state live in Application Support; masters outlive the app. Reinstall a year later and pick up exactly where you left off.</p>
             </div>
             <div class="feature-card">
                 <h3>✨ Sparkle 2 Updates</h3>

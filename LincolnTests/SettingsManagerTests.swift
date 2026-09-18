@@ -19,7 +19,6 @@ final class SettingsManagerTests: XCTestCase {
         let settings = make()
         XCTAssertTrue(settings.showMenuBarItem)
         XCTAssertFalse(settings.hideDockIcon)
-        XCTAssertTrue(settings.restoreConnectionsOnLaunch)
         XCTAssertTrue(settings.notificationsEnabled)
         XCTAssertEqual(settings.sshExecutable, "/usr/bin/ssh")
         XCTAssertEqual(settings.extraPath, SettingsManager.defaultExtraPath)
@@ -31,17 +30,15 @@ final class SettingsManagerTests: XCTestCase {
     func testPersistenceRoundTrip() {
         let settings = make()
         settings.hideDockIcon = true
-        settings.restoreConnectionsOnLaunch = false
+        settings.notificationsEnabled = false
         settings.sshExecutable = "/opt/homebrew/bin/ssh"
         settings.serverAliveInterval = 15
-        settings.sshAuthSock = "~/.ssh/agent/sock"
 
         let reloaded = make()
         XCTAssertTrue(reloaded.hideDockIcon)
-        XCTAssertFalse(reloaded.restoreConnectionsOnLaunch)
+        XCTAssertFalse(reloaded.notificationsEnabled)
         XCTAssertEqual(reloaded.sshExecutable, "/opt/homebrew/bin/ssh")
         XCTAssertEqual(reloaded.serverAliveInterval, 15)
-        XCTAssertEqual(reloaded.sshAuthSock, "~/.ssh/agent/sock")
     }
 
     func testHidingDockForcesMenuBarOn() {
