@@ -6,6 +6,20 @@
         <description>Most recent updates for Lincoln.</description>
         <language>en</language>
         <item>
+            <title>1.0.1</title>
+            <pubDate>Fri, 18 Sep 2026 19:52:46 -0400</pubDate>
+            <sparkle:version>1.0.1</sparkle:version>
+            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Lincoln 1.0.1</h2>
+<p>Lincoln 1.0.1 keeps Terminal.app as the console and stops duplicating it inside the app.</p>
+<ul>
+  <li><strong>Copy ssh Command</strong>: The Terminal button and menu item are replaced by <strong>Copy ssh Command</strong> (&#8679;&#8984;C) in the tunnel header and the Tunnel menu. It copies an <code>ssh</code> command for your own terminal that opens a session on the host through the tunnel's control master, so no second Duo prompt is needed; the same command is shown under Status.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.1/Lincoln-1.0.1.zip" length="2772800" type="application/octet-stream" sparkle:edSignature="3Hq7ZTf/Cl8kS29hU3g+m73KiVl2O9cDlsReJXWlUE8HqcmF4rYa0Vi2W1PU/DnJynPl0NSCH52L09Z8X6/LDg=="/>
+        </item>
+        <item>
             <title>1.0.0</title>
             <pubDate>Fri, 18 Sep 2026 19:50:07 -0400</pubDate>
             <sparkle:version>1.0.0</sparkle:version>
