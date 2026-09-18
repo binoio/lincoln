@@ -10,8 +10,6 @@ import LincolnCore
 
 public struct ContentView: View {
     @ObservedObject var manager: TunnelManager
-    @Environment(\.openWindow) private var openWindow
-    @State private var showingImport = false
 
     public var body: some View {
         NavigationSplitView {
@@ -27,30 +25,16 @@ public struct ContentView: View {
         }
         .navigationTitle("Lincoln")
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     manager.addNewTunnel()
                 } label: {
                     Label("New Tunnel", systemImage: "plus")
                 }
                 .help("New Tunnel (⌘N)")
-
-                Button {
-                    showingImport = true
-                } label: {
-                    Label("Import", systemImage: "square.and.arrow.down")
-                }
-                .help("Import hosts from ~/.ssh/config (⇧⌘I)")
-
-                Button {
-                    openWindow(id: "logs")
-                } label: {
-                    Label("Logs", systemImage: "scroll")
-                }
-                .help("Open Diagnostic Logs (⌥⌘L)")
             }
         }
-        .sheet(isPresented: $showingImport) {
+        .sheet(isPresented: $manager.showingImport) {
             ImportSheetView(manager: manager)
         }
         .alert(
@@ -157,7 +141,7 @@ public struct ContentView: View {
                     .frame(maxWidth: 420)
                 HStack(spacing: 12) {
                     Button {
-                        showingImport = true
+                        manager.showingImport = true
                     } label: {
                         Label("Import from ssh config…", systemImage: "square.and.arrow.down")
                     }

@@ -123,6 +123,13 @@ struct LincolnApp: App {
             LincolnCommands(manager: manager, updaterViewModel: appDelegate.updaterViewModel, openLogs: {
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "logs")
+            }, openMainWindow: {
+                openWindow(id: "main")
+                DispatchQueue.main.async {
+                    if let firstWindow = NSApp.windows.first(where: { $0.canBecomeMain }) {
+                        firstWindow.makeKeyAndOrderFront(nil)
+                    }
+                }
             }, quit: quit)
         }
 
@@ -194,6 +201,7 @@ struct LincolnCommands: Commands {
     @ObservedObject var manager: TunnelManager
     @ObservedObject var updaterViewModel: UpdaterViewModel
     var openLogs: () -> Void
+    var openMainWindow: () -> Void
     var quit: () -> Void
 
     var body: some Commands {
@@ -211,6 +219,15 @@ struct LincolnCommands: Commands {
                 manager.addNewTunnel()
             }
             .keyboardShortcut("n", modifiers: .command)
+
+            Button("Import from ssh config…") {
+                NSApp.activate(ignoringOtherApps: true)
+                openMainWindow()
+                manager.showingImport = true
+            }
+            .keyboardShortcut("i", modifiers: [.command, .shift])
+
+            Divider()
 
             Button("Duplicate Tunnel") {
                 if let id = manager.selectedTunnelID { manager.duplicate(id: id) }

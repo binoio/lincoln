@@ -19,6 +19,8 @@ final class TunnelManager: ObservableObject {
     /// A removal awaiting the user's confirmation (set by menu, toolbar,
     /// context menu or the Delete key; the main window shows the alert).
     @Published var pendingRemovalID: UUID?
+    /// The ssh-config import sheet, opened from File › Import… or the empty state.
+    @Published var showingImport = false
     @Published private(set) var loadWarning: String?
     /// Bumped whenever any supervisor changes state so list rows refresh.
     @Published private(set) var stateVersion = 0
