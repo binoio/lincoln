@@ -1,0 +1,4 @@
+services:
+  tests:
+    build: .
+    image: lincoln-core-tests

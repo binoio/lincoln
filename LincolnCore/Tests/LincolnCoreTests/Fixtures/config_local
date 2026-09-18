@@ -1,0 +1,12 @@
+# machine-specific settings (fixture)
+Host example-vm
+    HostName vm.example.org
+    User alice
+    IdentityFile ~/.ssh/example_key
+    IdentitiesOnly yes
+    RemoteForward 8022 localhost:22
+
+Match host example-vm exec "~/.ssh/example-check.sh"
+
+Host *
+    User alice

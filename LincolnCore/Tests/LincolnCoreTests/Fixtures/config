@@ -1,0 +1,60 @@
+# ── SSH Config fixture (modeled on the HPC + General layout) ────────────
+# Machine-specific hosts live in config_local, included first so anything
+# defined there wins over the defaults below.
+Include config_local
+
+# --- Localhost exception ---
+Host localhost
+    ProxyCommand none
+    ProxyJump none
+
+# --- External services (no proxy) ---
+Host github.com gitlab.com bitbucket.org 192.168.1.1
+    ProxyJump none
+
+# --- Gateway (interactive, with SOCKS) ---
+Host tg
+    HostName tigressgateway.princeton.edu
+    DynamicForward 1080
+    ProxyJump none
+    ServerAliveInterval 300
+
+# --- Gateway (headless tunnel for RDP/VNC/etc.) ---
+Host tigress-tunnel
+    HostName tigressgateway.princeton.edu
+    ControlMaster no
+    ControlPath none
+    RequestTTY no
+    ProxyJump none
+
+# --- Files SMB tunnel ---
+Host princeton-files
+    HostName tigressgateway.princeton.edu
+    LocalForward 10445 files.princeton.edu:445
+    ControlMaster no
+    ControlPath none
+    RequestTTY no
+    ProxyJump none
+
+# --- Compute nodes (inherit ProxyJump tg from Host *) ---
+Host adroit
+    HostName adroit.princeton.edu
+
+Host della
+    HostName della.princeton.edu
+
+# --- Optional include (missing file is non-fatal) ---
+Include ~/.colima/ssh_config
+Include conf.d/*.conf
+
+# --- Global defaults (MUST BE LAST so per-host blocks win) ---
+Host *
+    IgnoreUnknown UseKeychain
+    UseKeychain yes
+    AddKeysToAgent yes
+    ProxyJump tg
+    ServerAliveInterval 60
+    ServerAliveCountMax 5
+    ControlMaster auto
+    ControlPersist yes
+    ControlPath ~/.ssh/sockets/socket-%r@%h:%p

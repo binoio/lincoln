@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6D6BF0"/>
+      <stop offset="0.55" stop-color="#4B49C9"/>
+      <stop offset="1" stop-color="#2B2A7A"/>
+    </linearGradient>
+    <radialGradient id="light" cx="512" cy="410" r="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFBE6"/>
+      <stop offset="0.35" stop-color="#FFD65C" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#5E5CE6" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="squircle"><rect width="1024" height="1024" rx="229.07"/></clipPath>
+    <clipPath id="opening"><path d="M281.6 716.8V491.5a230.4 230.4 0 0 1 460.8 0v225.3z"/></clipPath>
+  </defs>
+  <g clip-path="url(#squircle)">
+    <rect width="1024" height="1024" fill="url(#sky)"/>
+    <rect y="716.8" width="1024" height="307.2" fill="#1B1B3A"/>
+    <path d="M204.8 716.8V491.5a307.2 307.2 0 0 1 614.4 0v225.3z" fill="#F5F4FF"/>
+    <g clip-path="url(#opening)">
+      <rect width="1024" height="1024" fill="#0B0B1F"/>
+      <circle cx="512" cy="614" r="220" fill="url(#light)"/>
+      <path d="M281.6 1024h460.8L532.5 614h-41z" fill="#2A2A4E"/>
+      <line x1="512" y1="1024" x2="512" y2="634" stroke="#FFD65C" stroke-width="12" stroke-dasharray="51 36"/>
+    </g>
+    <path d="M122.9 1024h778.2L742.4 716.8H281.6z" fill="#2A2A4E"/>
+    <line x1="512" y1="1024" x2="512" y2="716.8" stroke="#FFD65C" stroke-width="16" stroke-dasharray="72 46"/>
+    <path d="M466 256.5h92l15 40h-122z" fill="#C9C7FF"/>
+  </g>
+</svg>

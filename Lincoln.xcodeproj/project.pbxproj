@@ -1,0 +1,700 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B01 /* LincolnApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F01; };
+		B02 /* LogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F02; };
+		B03 /* PTYProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03; };
+		B04 /* TunnelSupervisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04; };
+		B05 /* TunnelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F05; };
+		B06 /* SSHEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06; };
+		B07 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F07; };
+		B08 /* PowerMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F08; };
+		B09 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F09; };
+		B10 /* LogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10; };
+		B11 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11; };
+		B12 /* StaleProcessReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12; };
+		B13 /* TunnelEditorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F13; };
+		B14 /* UpdaterViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14; };
+		B15 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F15; };
+		B16 /* TunnelSidebarRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F16; };
+		B17 /* TunnelDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F17; };
+		B18 /* TunnelEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18; };
+		B19 /* ForwardsEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F19; };
+		B20 /* ConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20; };
+		B21 /* ImportSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21; };
+		B22 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F22; };
+		B23 /* StatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23; };
+		B24 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24; };
+		B25 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25; };
+		B26 /* ConsoleTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26; };
+		B90 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F30; };
+		B91 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = P01 /* Sparkle */; };
+		B92 /* LincolnCore in Frameworks */ = {isa = PBXBuildFile; productRef = P03 /* LincolnCore */; };
+
+		BT01 /* MockTunnelProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT01; };
+		BT02 /* TunnelSupervisorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT02; };
+		BT03 /* TunnelManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT03; };
+		BT04 /* SettingsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT04; };
+		BT05 /* PTYProcessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT05; };
+		BT06 /* MenuBarIconTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT06; };
+		BT07 /* LogStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT07; };
+		BT08 /* SSHEnvironmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT08; };
+		BT09 /* TunnelEditorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT09; };
+		BT10 /* StaleProcessReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT10; };
+		BT11 /* RealSSHIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT11; };
+
+		BU01 /* LincolnUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FU01; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C01 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 900 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = T01;
+			remoteInfo = Lincoln;
+		};
+		C02 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 900 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = T01;
+			remoteInfo = Lincoln;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		F01 /* LincolnApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LincolnApp.swift; sourceTree = "<group>"; };
+		F02 /* LogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogEntry.swift; sourceTree = "<group>"; };
+		F03 /* PTYProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYProcess.swift; sourceTree = "<group>"; };
+		F04 /* TunnelSupervisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSupervisor.swift; sourceTree = "<group>"; };
+		F05 /* TunnelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelManager.swift; sourceTree = "<group>"; };
+		F06 /* SSHEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHEnvironment.swift; sourceTree = "<group>"; };
+		F07 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		F08 /* PowerMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerMonitor.swift; sourceTree = "<group>"; };
+		F09 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		F10 /* LogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStore.swift; sourceTree = "<group>"; };
+		F11 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
+		F12 /* StaleProcessReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleProcessReconciler.swift; sourceTree = "<group>"; };
+		F13 /* TunnelEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelEditorViewModel.swift; sourceTree = "<group>"; };
+		F14 /* UpdaterViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterViewModel.swift; sourceTree = "<group>"; };
+		F15 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F16 /* TunnelSidebarRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSidebarRow.swift; sourceTree = "<group>"; };
+		F17 /* TunnelDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelDetailView.swift; sourceTree = "<group>"; };
+		F18 /* TunnelEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelEditorView.swift; sourceTree = "<group>"; };
+		F19 /* ForwardsEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForwardsEditorView.swift; sourceTree = "<group>"; };
+		F20 /* ConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleView.swift; sourceTree = "<group>"; };
+		F21 /* ImportSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportSheetView.swift; sourceTree = "<group>"; };
+		F22 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		F23 /* StatusBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadgeView.swift; sourceTree = "<group>"; };
+		F24 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F25 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
+		F26 /* ConsoleTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsoleTextView.swift; sourceTree = "<group>"; };
+		F30 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F32 /* Lincoln.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Lincoln.entitlements; sourceTree = "<group>"; };
+		P02 /* Lincoln.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lincoln.app; sourceTree = BUILT_PRODUCTS_DIR; };
+
+		FT01 /* MockTunnelProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTunnelProcess.swift; sourceTree = "<group>"; };
+		FT02 /* TunnelSupervisorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelSupervisorTests.swift; sourceTree = "<group>"; };
+		FT03 /* TunnelManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelManagerTests.swift; sourceTree = "<group>"; };
+		FT04 /* SettingsManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManagerTests.swift; sourceTree = "<group>"; };
+		FT05 /* PTYProcessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTYProcessTests.swift; sourceTree = "<group>"; };
+		FT06 /* MenuBarIconTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIconTests.swift; sourceTree = "<group>"; };
+		FT07 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
+		FT08 /* SSHEnvironmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHEnvironmentTests.swift; sourceTree = "<group>"; };
+		FT09 /* TunnelEditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelEditorViewModelTests.swift; sourceTree = "<group>"; };
+		FT10 /* StaleProcessReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaleProcessReconcilerTests.swift; sourceTree = "<group>"; };
+		FT11 /* RealSSHIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealSSHIntegrationTests.swift; sourceTree = "<group>"; };
+		PT01 /* LincolnTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LincolnTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+
+		FU01 /* LincolnUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LincolnUITests.swift; sourceTree = "<group>"; };
+		PU01 /* LincolnUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LincolnUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		501 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B91 /* Sparkle in Frameworks */,
+				B92 /* LincolnCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		502 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		503 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		600 = {
+			isa = PBXGroup;
+			children = (
+				601 /* Lincoln */,
+				602 /* LincolnTests */,
+				603 /* LincolnUITests */,
+				605 /* LincolnCore */,
+				604 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		601 /* Lincoln */ = {
+			isa = PBXGroup;
+			children = (
+				F01 /* LincolnApp.swift */,
+				610 /* Models */,
+				611 /* Services */,
+				612 /* ViewModels */,
+				613 /* Views */,
+				F30 /* Assets.xcassets */,
+				F31 /* Info.plist */,
+				F32 /* Lincoln.entitlements */,
+			);
+			path = Lincoln;
+			sourceTree = "<group>";
+		};
+		610 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F02 /* LogEntry.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		611 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F03 /* PTYProcess.swift */,
+				F04 /* TunnelSupervisor.swift */,
+				F05 /* TunnelManager.swift */,
+				F06 /* SSHEnvironment.swift */,
+				F07 /* NetworkMonitor.swift */,
+				F08 /* PowerMonitor.swift */,
+				F09 /* NotificationService.swift */,
+				F10 /* LogStore.swift */,
+				F11 /* SettingsManager.swift */,
+				F12 /* StaleProcessReconciler.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		612 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				F13 /* TunnelEditorViewModel.swift */,
+				F14 /* UpdaterViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		613 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F15 /* ContentView.swift */,
+				F16 /* TunnelSidebarRow.swift */,
+				F17 /* TunnelDetailView.swift */,
+				F18 /* TunnelEditorView.swift */,
+				F19 /* ForwardsEditorView.swift */,
+				F20 /* ConsoleView.swift */,
+				F21 /* ImportSheetView.swift */,
+				F22 /* MenuBarView.swift */,
+				F23 /* StatusBadgeView.swift */,
+				F24 /* SettingsView.swift */,
+				F25 /* LogsView.swift */,
+				F26 /* ConsoleTextView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		602 /* LincolnTests */ = {
+			isa = PBXGroup;
+			children = (
+				FT01 /* MockTunnelProcess.swift */,
+				FT02 /* TunnelSupervisorTests.swift */,
+				FT03 /* TunnelManagerTests.swift */,
+				FT04 /* SettingsManagerTests.swift */,
+				FT05 /* PTYProcessTests.swift */,
+				FT06 /* MenuBarIconTests.swift */,
+				FT07 /* LogStoreTests.swift */,
+				FT08 /* SSHEnvironmentTests.swift */,
+				FT09 /* TunnelEditorViewModelTests.swift */,
+				FT10 /* StaleProcessReconcilerTests.swift */,
+				FT11 /* RealSSHIntegrationTests.swift */,
+			);
+			path = LincolnTests;
+			sourceTree = "<group>";
+		};
+		603 /* LincolnUITests */ = {
+			isa = PBXGroup;
+			children = (
+				FU01 /* LincolnUITests.swift */,
+			);
+			path = LincolnUITests;
+			sourceTree = "<group>";
+		};
+		605 /* LincolnCore */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = LincolnCore;
+			sourceTree = "<group>";
+		};
+		604 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				P02 /* Lincoln.app */,
+				PT01 /* LincolnTests.xctest */,
+				PU01 /* LincolnUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		T01 /* Lincoln */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = Z01 /* Build configuration list for PBXNativeTarget "Lincoln" */;
+			buildPhases = (
+				S01 /* Sources */,
+				501 /* Frameworks */,
+				R01 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Lincoln;
+			packageProductDependencies = (
+				P01 /* Sparkle */,
+				P03 /* LincolnCore */,
+			);
+			productName = Lincoln;
+			productReference = P02 /* Lincoln.app */;
+			productType = "com.apple.product-type.application";
+		};
+		T02 /* LincolnTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = Z02 /* Build configuration list for PBXNativeTarget "LincolnTests" */;
+			buildPhases = (
+				S02 /* Sources */,
+				502 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D01 /* PBXTargetDependency */,
+			);
+			name = LincolnTests;
+			productName = LincolnTests;
+			productReference = PT01 /* LincolnTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		T03 /* LincolnUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = Z03 /* Build configuration list for PBXNativeTarget "LincolnUITests" */;
+			buildPhases = (
+				S03 /* Sources */,
+				503 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D02 /* PBXTargetDependency */,
+			);
+			name = LincolnUITests;
+			productName = LincolnUITests;
+			productReference = PU01 /* LincolnUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		900 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					T01 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					T02 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = T01;
+					};
+					T03 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = T01;
+					};
+				};
+			};
+			buildConfigurationList = Z00 /* Build configuration list for PBXProject "Lincoln" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 600;
+			packageReferences = (
+				PR01 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				PR02 /* XCLocalSwiftPackageReference "LincolnCore" */,
+			);
+			productRefGroup = 604 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				T01 /* Lincoln */,
+				T02 /* LincolnTests */,
+				T03 /* LincolnUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		R01 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B90 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		S01 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B01 /* LincolnApp.swift in Sources */,
+				B02 /* LogEntry.swift in Sources */,
+				B03 /* PTYProcess.swift in Sources */,
+				B04 /* TunnelSupervisor.swift in Sources */,
+				B05 /* TunnelManager.swift in Sources */,
+				B06 /* SSHEnvironment.swift in Sources */,
+				B07 /* NetworkMonitor.swift in Sources */,
+				B08 /* PowerMonitor.swift in Sources */,
+				B09 /* NotificationService.swift in Sources */,
+				B10 /* LogStore.swift in Sources */,
+				B11 /* SettingsManager.swift in Sources */,
+				B12 /* StaleProcessReconciler.swift in Sources */,
+				B13 /* TunnelEditorViewModel.swift in Sources */,
+				B14 /* UpdaterViewModel.swift in Sources */,
+				B15 /* ContentView.swift in Sources */,
+				B16 /* TunnelSidebarRow.swift in Sources */,
+				B17 /* TunnelDetailView.swift in Sources */,
+				B18 /* TunnelEditorView.swift in Sources */,
+				B19 /* ForwardsEditorView.swift in Sources */,
+				B20 /* ConsoleView.swift in Sources */,
+				B21 /* ImportSheetView.swift in Sources */,
+				B22 /* MenuBarView.swift in Sources */,
+				B23 /* StatusBadgeView.swift in Sources */,
+				B24 /* SettingsView.swift in Sources */,
+				B25 /* LogsView.swift in Sources */,
+				B26 /* ConsoleTextView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S02 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BT01 /* MockTunnelProcess.swift in Sources */,
+				BT02 /* TunnelSupervisorTests.swift in Sources */,
+				BT03 /* TunnelManagerTests.swift in Sources */,
+				BT04 /* SettingsManagerTests.swift in Sources */,
+				BT05 /* PTYProcessTests.swift in Sources */,
+				BT06 /* MenuBarIconTests.swift in Sources */,
+				BT07 /* LogStoreTests.swift in Sources */,
+				BT08 /* SSHEnvironmentTests.swift in Sources */,
+				BT09 /* TunnelEditorViewModelTests.swift in Sources */,
+				BT10 /* StaleProcessReconcilerTests.swift in Sources */,
+				BT11 /* RealSSHIntegrationTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BU01 /* LincolnUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D01 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = T01 /* Lincoln */;
+			targetProxy = C01 /* PBXContainerItemProxy */;
+		};
+		D02 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = T01 /* Lincoln */;
+			targetProxy = C02 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		C_DEBUG_PROJ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		C_RELEASE_PROJ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		C_DEBUG_APP = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Lincoln/Lincoln.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.0.0;
+				ENABLE_DEBUG_DYLIB = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Lincoln/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.Lincoln;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C_RELEASE_APP = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Lincoln/Lincoln.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.0.0;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Lincoln/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.Lincoln;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C_DEBUG_TEST = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.LincolnTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Lincoln.app/Contents/MacOS/Lincoln";
+			};
+			name = Debug;
+		};
+		C_RELEASE_TEST = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.LincolnTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Lincoln.app/Contents/MacOS/Lincoln";
+			};
+			name = Release;
+		};
+		C_DEBUG_UITEST = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.LincolnUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Lincoln;
+			};
+			name = Debug;
+		};
+		C_RELEASE_UITEST = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.LincolnUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Lincoln;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		Z00 /* Build configuration list for PBXProject "Lincoln" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C_DEBUG_PROJ /* Debug */,
+				C_RELEASE_PROJ /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		Z01 /* Build configuration list for PBXNativeTarget "Lincoln" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C_DEBUG_APP /* Debug */,
+				C_RELEASE_APP /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		Z02 /* Build configuration list for PBXNativeTarget "LincolnTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C_DEBUG_TEST /* Debug */,
+				C_RELEASE_TEST /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		Z03 /* Build configuration list for PBXNativeTarget "LincolnUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C_DEBUG_UITEST /* Debug */,
+				C_RELEASE_UITEST /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		PR02 /* XCLocalSwiftPackageReference "LincolnCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LincolnCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		PR01 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		P01 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PR01 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+		P03 /* LincolnCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LincolnCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+	};
+	rootObject = 900 /* Project object */;
+}

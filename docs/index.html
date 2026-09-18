@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lincoln - SSH Tunnel Manager for macOS</title>
+    <meta name="description" content="Establish, maintain and reconfigure SSH tunnels (SOCKS proxies and port forwards) through a gateway from the Dock or the menu bar.">
+    <link rel="icon" type="image/png" href="icon.png">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --fg: #1d1d1f;
+            --secondary: #86868b;
+            --accent: #5E5CE6;
+            --card-bg: #f5f5f7;
+            --border: #d2d2d7;
+            --radius: 16px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --fg: #f5f5f7;
+                --secondary: #86868b;
+                --accent: #5E5CE6;
+                --card-bg: #1c1c1e;
+                --border: #38383a;
+            }
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--fg);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        nav {
+            padding: 24px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .logo img {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        header {
+            text-align: center;
+            padding: 80px 0 60px;
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            display: block;
+            border-radius: 26px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin: 0 0 16px;
+            letter-spacing: -0.015em;
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            color: var(--secondary);
+            max-width: 620px;
+            margin: 0 auto 36px;
+        }
+
+        .cta {
+            display: inline-block;
+            background-color: var(--accent);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 14px rgba(94, 92, 230, 0.4);
+        }
+
+        .cta:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(94, 92, 230, 0.5);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin: 60px 0;
+        }
+
+        .feature-card {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin: 0 0 12px;
+        }
+
+        .feature-card p {
+            color: var(--secondary);
+            margin: 0;
+        }
+
+        .specs {
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 30px;
+            margin: 40px 0;
+            border: 1px solid var(--border);
+        }
+
+        .specs h2 {
+            margin-top: 0;
+        }
+
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .spec-item label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .spec-item span {
+            font-weight: 600;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+            margin-top: 60px;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="#" class="logo">
+                <img src="icon.png" alt="Lincoln Icon">
+                Lincoln
+            </a>
+            <a href="https://bino.io" style="color: var(--secondary); text-decoration: none; font-weight: 500;">Bino.io Apps</a>
+        </nav>
+
+        <header>
+            <img src="icon.png" alt="Lincoln App Icon" class="app-icon">
+            <h1>Lincoln</h1>
+            <p class="subtitle">Establish, maintain and reconfigure SSH tunnels through your gateway — SOCKS proxies and port forwards, from the Dock or the menu bar.</p>
+            <a href="https://github.com/binoio/lincoln/releases/latest" class="cta">Download for macOS</a>
+        </header>
+
+        <section class="features">
+            <div class="feature-card">
+                <h3>🚇 Tunnels, Not Terminals</h3>
+                <p>Define a tunnel once — host alias, SOCKS proxy, local and remote forwards — then connect and disconnect it with one click from the menu bar.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔁 Kept Alive</h3>
+                <p>Dropped links are noticed by keepalives, network changes and wake from sleep, then re-established with backoff. Auto-reconnect is a per-tunnel choice.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔐 Keys Only, Duo in the App</h3>
+                <p>Password logins are disabled. Duo passcode and push prompts, key passphrases and host-key checks appear in a per-tunnel console with a notification.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🧭 Reads Your ssh config</h3>
+                <p>Imports host aliases and existing forwards from <code>~/.ssh/config</code> and runs ssh with your normal configuration. It never writes to it.</p>
+            </div>
+            <div class="feature-card">
+                <h3>💾 Durable &amp; Idempotent</h3>
+                <p>Tunnels and their desired state live in Application Support. Reinstall a year later and pick up exactly where you left off.</p>
+            </div>
+            <div class="feature-card">
+                <h3>✨ Sparkle 2 Updates</h3>
+                <p>Includes built-in Sparkle 2 updater support for fast, seamless, notarized updates.</p>
+            </div>
+        </section>
+
+        <section class="specs">
+            <h2>Technical Specifications</h2>
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <label>Platform</label>
+                    <span>macOS 14.0+ (Sonoma, Sequoia, Tahoe)</span>
+                </div>
+                <div class="spec-item">
+                    <label>Architecture</label>
+                    <span>Universal (Apple Silicon &amp; Intel)</span>
+                </div>
+                <div class="spec-item">
+                    <label>Security</label>
+                    <span>Apple Developer Signed &amp; Notarized</span>
+                </div>
+                <div class="spec-item">
+                    <label>Transport</label>
+                    <span>OpenSSH (system <code>/usr/bin/ssh</code>)</span>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 Michael Bino. Built with Swift &amp; SwiftUI. Part of <a href="https://bino.io">Bino.io Apps</a>.</p>
+        </footer>
+    </div>
+</body>
+</html>
