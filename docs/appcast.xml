@@ -6,6 +6,21 @@
         <description>Most recent updates for Lincoln.</description>
         <language>en</language>
         <item>
+            <title>1.0.2</title>
+            <pubDate>Fri, 18 Sep 2026 19:57:05 -0400</pubDate>
+            <sparkle:version>1.0.2</sparkle:version>
+            <sparkle:shortVersionString>1.0.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Lincoln 1.0.2</h2>
+<p>Lincoln 1.0.2 trims the main window toolbar to the one action that belongs there.</p>
+<ul>
+  <li><strong>Simpler toolbar</strong>: Only <strong>New Tunnel</strong> remains in the window toolbar. Diagnostic Logs are reached from <strong>Window &#9656; Logs</strong> (&#8997;&#8984;L) and the menu bar extra.</li>
+  <li><strong>File &#9656; Import from ssh config&hellip;</strong> (&#8679;&#8984;I) opens the import sheet; the empty-state button still offers it on first run.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.2/Lincoln-1.0.2.zip" length="2765350" type="application/octet-stream" sparkle:edSignature="5wyhVygLAobhg5/kBldbJODtpjAwJht4lY2ZQLjaoxr39Gg4WS1nGdyc0ZwzJD7IzcuvaaAYwy5mIPQTN64LAg=="/>
+        </item>
+        <item>
             <title>1.0.1</title>
             <pubDate>Fri, 18 Sep 2026 19:52:46 -0400</pubDate>
             <sparkle:version>1.0.1</sparkle:version>
