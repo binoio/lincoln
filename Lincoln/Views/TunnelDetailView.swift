@@ -43,7 +43,6 @@ struct TunnelDetailView: View {
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                StatusBadgeView(state: supervisor.state)
                 Menu {
                     Button("Duplicate Tunnel") { manager.duplicate(id: supervisor.id) }
                     Button("Remove Tunnel…", role: .destructive) { manager.requestRemoval(id: supervisor.id) }
@@ -98,6 +97,8 @@ struct TunnelDetailView: View {
                         .lineLimit(1)
                 }
                 Spacer()
+                // Status sits under the Connect/Disconnect button it describes.
+                StatusBadgeView(state: supervisor.state)
             }
         }
         .padding(.horizontal, 20)
