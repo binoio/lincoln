@@ -43,6 +43,18 @@ struct TunnelDetailView: View {
                 }
                 Spacer()
                 StatusBadgeView(state: supervisor.state)
+                Menu {
+                    Button("Open Terminal Session") { supervisor.openSession() }
+                        .disabled(!supervisor.state.isConnected)
+                    Divider()
+                    Button("Duplicate Tunnel") { manager.duplicate(id: supervisor.id) }
+                    Button("Remove Tunnel…", role: .destructive) { manager.requestRemoval(id: supervisor.id) }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("More actions")
                 Button {
                     supervisor.openSession()
                 } label: {

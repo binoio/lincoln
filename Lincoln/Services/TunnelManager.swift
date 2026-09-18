@@ -16,6 +16,9 @@ final class TunnelManager: ObservableObject {
     @Published private(set) var supervisors: [TunnelSupervisor] = []
     @Published private(set) var document = TunnelDocument.empty
     @Published var selectedTunnelID: UUID?
+    /// A removal awaiting the user's confirmation (set by menu, toolbar,
+    /// context menu or the Delete key; the main window shows the alert).
+    @Published var pendingRemovalID: UUID?
     @Published private(set) var loadWarning: String?
     /// Bumped whenever any supervisor changes state so list rows refresh.
     @Published private(set) var stateVersion = 0
@@ -227,6 +230,11 @@ final class TunnelManager: ObservableObject {
         }
         persist()
         LogStore.log(level: .info, category: "Tunnels", message: "Removed \(name)")
+    }
+
+    func requestRemoval(id: UUID?) {
+        guard let id = id, supervisor(for: id) != nil else { return }
+        pendingRemovalID = id
     }
 
     @discardableResult

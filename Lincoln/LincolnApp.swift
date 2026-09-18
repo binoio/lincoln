@@ -211,6 +211,18 @@ struct LincolnCommands: Commands {
                 manager.addNewTunnel()
             }
             .keyboardShortcut("n", modifiers: .command)
+
+            Button("Duplicate Tunnel") {
+                if let id = manager.selectedTunnelID { manager.duplicate(id: id) }
+            }
+            .keyboardShortcut("d", modifiers: .command)
+            .disabled(manager.selectedTunnelID == nil)
+
+            Button("Remove Tunnel…") {
+                manager.requestRemoval(id: manager.selectedTunnelID)
+            }
+            .keyboardShortcut(.delete, modifiers: .command)
+            .disabled(manager.selectedTunnelID == nil)
         }
 
         CommandMenu("Tunnel") {

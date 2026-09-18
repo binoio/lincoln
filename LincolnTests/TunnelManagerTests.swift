@@ -198,6 +198,21 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertEqual(socket.running[socketPath], 3)
     }
 
+    func testRemovalRequestNeedsConfirmation() {
+        let manager = makeManager()
+        manager.load()
+        let a = manager.add(TestFixtures.tunnel(name: "A"))
+        manager.requestRemoval(id: nil)
+        XCTAssertNil(manager.pendingRemovalID)
+        manager.requestRemoval(id: UUID())
+        XCTAssertNil(manager.pendingRemovalID, "unknown ids are ignored")
+        manager.requestRemoval(id: a.id)
+        XCTAssertEqual(manager.pendingRemovalID, a.id)
+        XCTAssertEqual(manager.supervisors.count, 1, "nothing is removed until confirmed")
+        manager.remove(id: a.id)
+        XCTAssertTrue(manager.supervisors.isEmpty)
+    }
+
     func testDuplicateAndMove() {
         let manager = makeManager()
         manager.load()

@@ -2,9 +2,11 @@
 //
 // generate_icon.swift: Render the Lincoln app icon procedurally.
 //
-// Produces every size in Lincoln/Assets.xcassets/AppIcon.appiconset (full-bleed
-// squircle, as macOS Tahoe expects), docs/icon.png (1024 px) and, when the
-// bino.io site checkout is present, its copy of the icon.
+// Produces every size in Lincoln/Assets.xcassets/AppIcon.appiconset (artwork
+// filling the standard 824/1024 squircle body on Apple's icon grid, with the
+// usual drop shadow, so it sits at the same size as every other Dock icon),
+// docs/icon.png (1024 px, full-bleed for the web) and, when the bino.io site
+// checkout is present, its copy of the icon.
 //
 // Usage: xcrun swift Scripts/generate_icon.swift [preview.png]
 
@@ -137,6 +139,51 @@ func render(size s: CGFloat) -> NSImage {
     return image
 }
 
+/// The app icon on Apple's macOS icon grid: the artwork fills an 824×824
+/// squircle centred in the 1024×1024 canvas (80.47%), lifted slightly to make
+/// room for the standard soft drop shadow beneath it.
+func renderAppIcon(size s: CGFloat) -> NSImage {
+    let artwork = render(size: s)
+    let image = NSImage(size: NSSize(width: s, height: s))
+    image.lockFocus()
+    guard let ctx = NSGraphicsContext.current?.cgContext else { image.unlockFocus(); return image }
+
+    let bodySize = s * 0.8046875
+    let margin = (s - bodySize) / 2
+    let yOffset = s * 0.006
+    let rect = CGRect(x: margin, y: margin + yOffset, width: bodySize, height: bodySize)
+    let radius = bodySize * 0.2237
+    let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+
+    // 1. Standard macOS drop shadow.
+    ctx.saveGState()
+    ctx.setShadow(offset: CGSize(width: 0, height: -max(0.5, s * 0.012)),
+                  blur: max(1.0, s * 0.025),
+                  color: CGColor(red: 0, green: 0, blue: 0, alpha: 0.30))
+    ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+    ctx.addPath(path)
+    ctx.fillPath()
+    ctx.restoreGState()
+
+    // 2. Artwork filling the squircle body.
+    ctx.saveGState()
+    ctx.addPath(path)
+    ctx.clip()
+    artwork.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
+    ctx.restoreGState()
+
+    // 3. Subtle inner stroke highlight.
+    ctx.saveGState()
+    ctx.addPath(path)
+    ctx.setLineWidth(max(0.5, s * 0.001))
+    ctx.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 0.12))
+    ctx.strokePath()
+    ctx.restoreGState()
+
+    image.unlockFocus()
+    return image
+}
+
 func writePNG(_ image: NSImage, pixelSize: Int, to url: URL) throws {
     let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: pixelSize, pixelsHigh: pixelSize, bitsPerSample: 8,
@@ -166,7 +213,7 @@ var images: [[String: String]] = []
 for (points, scale) in sizes {
     let pixels = points * scale
     let filename = "icon_\(points)x\(points)\(scale == 2 ? "@2x" : "").png"
-    try writePNG(render(size: CGFloat(pixels)), pixelSize: pixels, to: iconsetURL.appendingPathComponent(filename))
+    try writePNG(renderAppIcon(size: CGFloat(pixels)), pixelSize: pixels, to: iconsetURL.appendingPathComponent(filename))
     images.append(["filename": filename, "idiom": "mac", "scale": "\(scale)x", "size": "\(points)x\(points)"])
 }
 let contents: [String: Any] = ["images": images, "info": ["author": "xcode", "version": 1]]

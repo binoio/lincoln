@@ -12,7 +12,6 @@ public struct ContentView: View {
     @ObservedObject var manager: TunnelManager
     @Environment(\.openWindow) private var openWindow
     @State private var showingImport = false
-    @State private var pendingDeletion: TunnelSupervisor?
 
     public var body: some View {
         NavigationSplitView {
@@ -54,13 +53,20 @@ public struct ContentView: View {
         .sheet(isPresented: $showingImport) {
             ImportSheetView(manager: manager)
         }
-        .alert(item: $pendingDeletion) { supervisor in
-            Alert(
-                title: Text("Remove “\(supervisor.tunnel.displayName)”?"),
-                message: Text("The tunnel is removed from Lincoln. A running control master is left alone, and your ~/.ssh/config is not touched."),
-                primaryButton: .destructive(Text("Remove")) { manager.remove(id: supervisor.id) },
-                secondaryButton: .cancel()
+        .alert(
+            "Remove “\(manager.supervisor(for: manager.pendingRemovalID)?.tunnel.displayName ?? "")”?",
+            isPresented: Binding(
+                get: { manager.pendingRemovalID != nil },
+                set: { if !$0 { manager.pendingRemovalID = nil } }
             )
+        ) {
+            Button("Remove", role: .destructive) {
+                if let id = manager.pendingRemovalID { manager.remove(id: id) }
+                manager.pendingRemovalID = nil
+            }
+            Button("Cancel", role: .cancel) { manager.pendingRemovalID = nil }
+        } message: {
+            Text("The tunnel is removed from Lincoln. A running control master is left alone, and your ~/.ssh/config is not touched.")
         }
         .frame(minWidth: 760, idealWidth: 900, minHeight: 500, idealHeight: 620)
     }
@@ -81,6 +87,9 @@ public struct ContentView: View {
                 }
             }
             .listStyle(.sidebar)
+            .onDeleteCommand {
+                manager.requestRemoval(id: manager.selectedTunnelID)
+            }
 
             Divider()
 
@@ -129,7 +138,7 @@ public struct ContentView: View {
         }
         Divider()
         Button("Remove…") {
-            pendingDeletion = supervisor
+            manager.requestRemoval(id: supervisor.id)
         }
     }
 
