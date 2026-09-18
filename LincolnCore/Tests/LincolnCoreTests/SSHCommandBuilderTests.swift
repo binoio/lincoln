@@ -10,7 +10,6 @@ final class SSHCommandBuilderTests: XCTestCase {
         XCTAssertEqual(args, [
             "-M", "-N", "-f",
             "-o", "ControlPath=\(controlPath)",
-            "-o", "ClearAllForwardings=yes",
             "-o", "ExitOnForwardFailure=yes",
             "-o", "PasswordAuthentication=no",
             "-o", "NumberOfPasswordPrompts=0",
@@ -46,6 +45,18 @@ final class SSHCommandBuilderTests: XCTestCase {
         XCTAssertFalse(joined.contains("ignored"))
     }
 
+    func testForwardsAlreadyInConfigAreNotAddedTwice() {
+        // `ssh -G tg` reports DynamicForward 1080 from the config; adding -D 1080
+        // again would fail to bind and, with ExitOnForwardFailure, exit.
+        let configured = [Forward.dynamic(port: 1080, bindAddress: "localhost")]
+        let args = SSHCommandBuilder.masterArguments(for: tunnel, controlPath: "/tmp/s", configuredForwards: configured)
+        XCTAssertFalse(args.contains("-D"))
+        XCTAssertTrue(args.contains("10445:files.princeton.edu:445"))
+        XCTAssertFalse(args.contains("ClearAllForwardings=yes"), "ClearAllForwardings also clears command-line forwards")
+        let script = SSHCommandBuilder.terminalScript(for: tunnel, controlPath: "/tmp/s", statusFile: "/tmp/x", configuredForwards: configured)
+        XCTAssertFalse(script.contains("-D 1080"))
+    }
+
     func testInvalidForwardsAreSkippedAndPinnedOptionsComeFirst() {
         var custom = tunnel
         custom.forwards.append(Forward.local(port: 0, host: "", hostPort: 0))
@@ -63,7 +74,7 @@ final class SSHCommandBuilderTests: XCTestCase {
     func testTerminalScript() {
         let script = SSHCommandBuilder.terminalScript(for: tunnel, controlPath: "/tmp/sock dir/s", statusFile: "/tmp/state/x.status")
         XCTAssertTrue(script.hasPrefix("#!/bin/zsh\n"))
-        XCTAssertTrue(script.contains("/usr/bin/ssh -M -N -f -o 'ControlPath=/tmp/sock dir/s' -o ClearAllForwardings=yes"))
+        XCTAssertTrue(script.contains("/usr/bin/ssh -M -N -f -o 'ControlPath=/tmp/sock dir/s' -o ExitOnForwardFailure=yes"))
         XCTAssertTrue(script.contains("ssh_status=$?"), "`status` is read-only in zsh")
         XCTAssertTrue(script.contains("> /tmp/state/x.status"))
         XCTAssertTrue(script.contains("'Gateway SOCKS'"))

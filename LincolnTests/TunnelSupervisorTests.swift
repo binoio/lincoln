@@ -53,6 +53,14 @@ final class TunnelSupervisorTests: XCTestCase {
         XCTAssertTrue(supervisor.lastCommandLine.hasPrefix("/usr/bin/ssh -M -N -f"))
     }
 
+    func testForwardsFromConfigAreNotDuplicated() async {
+        environment.resolved!.destination.configuredForwards = [Forward.dynamic(port: 1080)]
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertFalse(launcher.last!.script.contains("-D 1080"), "the config's DynamicForward 1080 stays active; adding it again would fail to bind")
+        XCTAssertFalse(supervisor.lastCommandLine.contains("ClearAllForwardings"))
+    }
+
     func testInvalidTunnelDoesNotStart() async {
         supervisor = makeSupervisor(Tunnel(name: "x", host: ""))
         supervisor.start()

@@ -44,6 +44,23 @@ final class ForwardTests: XCTestCase {
         XCTAssertNil(Forward.parse(kind: .local, argument: "10445"))
     }
 
+    func testParseConfigDumpLines() {
+        XCTAssertEqual(Forward.parse(configDumpLine: "localforward 10445 [files.princeton.edu]:445")?.specification, "10445:files.princeton.edu:445")
+        XCTAssertEqual(Forward.parse(configDumpLine: "localforward [127.0.0.1]:5901 [localhost]:5901")?.bindAddress, "127.0.0.1")
+        XCTAssertEqual(Forward.parse(configDumpLine: "remoteforward 8022 [localhost]:22")?.kind, .remote)
+        XCTAssertEqual(Forward.parse(configDumpLine: "dynamicforward 1080")?.listenPort, 1080)
+        XCTAssertNil(Forward.parse(configDumpLine: "forwardagent no"))
+        XCTAssertNil(Forward.parse(configDumpLine: "hostname h"))
+    }
+
+    func testListensLike() {
+        XCTAssertTrue(Forward.dynamic(port: 1080).listensLike(Forward.dynamic(port: 1080, bindAddress: "localhost")))
+        XCTAssertTrue(Forward.dynamic(port: 1080, bindAddress: "127.0.0.1").listensLike(Forward.dynamic(port: 1080)))
+        XCTAssertFalse(Forward.dynamic(port: 1080).listensLike(Forward.dynamic(port: 1081)))
+        XCTAssertFalse(Forward.dynamic(port: 1080).listensLike(Forward.local(port: 1080, host: "h", hostPort: 1)))
+        XCTAssertFalse(Forward.dynamic(port: 1080).listensLike(Forward.dynamic(port: 1080, bindAddress: "0.0.0.0")))
+    }
+
     func testValidation() {
         XCTAssertFalse(Forward.local(port: 0, host: "x", hostPort: 1).isValid)
         XCTAssertFalse(Forward.local(port: 10, host: "", hostPort: 1).isValid)

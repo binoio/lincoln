@@ -19,6 +19,8 @@ struct SSHDestination: Equatable {
     /// The expanded ControlPath from the user's config, or nil when it is
     /// "none"/absent.
     var configuredControlPath: String?
+    /// Forwards the user's config already defines for this host.
+    var configuredForwards: [Forward] = []
 }
 
 @MainActor
@@ -125,7 +127,12 @@ final class SSHEnvironment: SSHEnvironmentProviding {
     /// Extracts user/hostname/port/controlpath from `ssh -G` output.
     static func destination(fromConfigDump dump: String) -> SSHDestination? {
         var values: [String: String] = [:]
+        var forwards: [Forward] = []
         for line in dump.components(separatedBy: .newlines) {
+            if let forward = Forward.parse(configDumpLine: line) {
+                forwards.append(forward)
+                continue
+            }
             let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { continue }
             values[parts[0].lowercased()] = parts[1].trimmingCharacters(in: .whitespaces)
@@ -137,7 +144,8 @@ final class SSHEnvironment: SSHEnvironmentProviding {
             user: values["user"],
             hostName: hostName,
             port: values["port"].flatMap(Int.init) ?? 22,
-            configuredControlPath: controlPath
+            configuredControlPath: controlPath,
+            configuredForwards: forwards
         )
     }
 

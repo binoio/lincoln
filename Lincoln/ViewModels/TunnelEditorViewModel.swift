@@ -109,10 +109,10 @@ final class TunnelEditorViewModel: ObservableObject {
     }
 
     /// The control master command, with a placeholder socket path until ssh -G resolves it.
-    func commandPreview(controlPath: String?) -> String {
+    func commandPreview(controlPath: String?, configuredForwards: [Forward] = []) -> String {
         SSHCommandBuilder.commandLine(
             executable: "ssh",
-            arguments: SSHCommandBuilder.masterArguments(for: resolvedDraft, controlPath: controlPath ?? "<ControlPath from ssh -G>")
+            arguments: SSHCommandBuilder.masterArguments(for: resolvedDraft, controlPath: controlPath ?? "<ControlPath from ssh -G>", configuredForwards: configuredForwards)
         )
     }
 }

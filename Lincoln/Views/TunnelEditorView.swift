@@ -45,6 +45,12 @@ struct TunnelEditorView: View {
                             }
                         }
                     }
+                    if let configured = supervisor.controlPath?.destination.configuredForwards, !configured.isEmpty {
+                        LabeledContent("From ssh config:") {
+                            Text(configured.map(\.summary).joined(separator: ", "))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     if let checked = supervisor.lastChecked {
                         LabeledContent("Last checked:") {
                             Text(checked.formatted(date: .omitted, time: .standard))
@@ -88,7 +94,7 @@ struct TunnelEditorView: View {
                 } header: {
                     Text("Forwards")
                 } footer: {
-                    Text("Lincoln clears any forwards defined for this host in ssh config and applies exactly these.")
+                    Text("Forwards your ssh config already defines for this host stay active too (as they would for a terminal `ssh`); Lincoln adds these without duplicating them.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -117,13 +123,13 @@ struct TunnelEditorView: View {
                 }
 
                 Section("Command preview") {
-                    Text(editor.commandPreview(controlPath: supervisor.controlPath?.path))
+                    Text(editor.commandPreview(controlPath: supervisor.controlPath?.path, configuredForwards: supervisor.controlPath?.destination.configuredForwards ?? []))
                         .font(.system(.caption, design: .monospaced))
                         .textSelection(.enabled)
                         .foregroundColor(.secondary)
                     HStack {
                         Button("Copy Command") {
-                            copy(editor.commandPreview(controlPath: supervisor.controlPath?.path))
+                            copy(editor.commandPreview(controlPath: supervisor.controlPath?.path, configuredForwards: supervisor.controlPath?.destination.configuredForwards ?? []))
                         }
                         Button("Copy ssh_config Snippet") {
                             copy(editor.configSnippet)

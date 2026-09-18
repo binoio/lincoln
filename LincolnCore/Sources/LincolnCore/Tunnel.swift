@@ -132,7 +132,8 @@ public struct Forward: Codable, Hashable, Identifiable {
         }
     }
 
-    /// Parses the ssh_config forms:
+    /// Parses the ssh_config forms (also as `ssh -G` prints them, with
+    /// bracketed hosts):
     ///   DynamicForward [bind_address:]port
     ///   LocalForward   [bind_address:]port host:hostport
     ///   RemoteForward  [bind_address:]port host:hostport
@@ -149,6 +150,33 @@ public struct Forward: Codable, Hashable, Identifiable {
                   let (host, hostPort) = splitHostAndPort(parts[1]) else { return nil }
             return Forward(kind: kind, bindAddress: bind, listenPort: port, targetHost: host, targetPort: hostPort)
         }
+    }
+
+    /// Parses one `ssh -G` output line such as "localforward 10445 [files.princeton.edu]:445".
+    public static func parse(configDumpLine line: String) -> Forward? {
+        let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else { return nil }
+        let kind: Kind
+        switch parts[0].lowercased() {
+        case "dynamicforward": kind = .dynamic
+        case "localforward": kind = .local
+        case "remoteforward": kind = .remote
+        default: return nil
+        }
+        return parse(kind: kind, configValue: parts[1])
+    }
+
+    /// Same listener (kind, bind address, port), ignoring ids and, for
+    /// dynamic forwards, nothing else.
+    public func listensLike(_ other: Forward) -> Bool {
+        kind == other.kind
+            && listenPort == other.listenPort
+            && Forward.normalizedBind(bindAddress) == Forward.normalizedBind(other.bindAddress)
+    }
+
+    private static func normalizedBind(_ bind: String) -> String {
+        let lowered = bind.lowercased()
+        return lowered == "localhost" || lowered == "127.0.0.1" || lowered == "::1" ? "" : lowered
     }
 
     /// Parses the command-line form used after -D/-L/-R, e.g. "10445:files.princeton.edu:445".
@@ -174,7 +202,8 @@ public struct Forward: Codable, Hashable, Identifiable {
         guard let lastColon = text.lastIndex(of: ":") else { return nil }
         let bind = unbracketed(String(text[..<lastColon]))
         guard let port = Int(text[text.index(after: lastColon)...]) else { return nil }
-        return (bind, port)
+        // ssh -G prints "[*]:port" for GatewayPorts-style binds.
+        return (bind == "*" ? "*" : bind, port)
     }
 
     private static func splitHostAndPort(_ text: String) -> (String, Int)? {

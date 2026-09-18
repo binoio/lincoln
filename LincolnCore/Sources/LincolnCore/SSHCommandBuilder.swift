@@ -46,7 +46,14 @@ public struct SSHCommandBuilder {
     /// The command that runs in Terminal.app: a backgrounding ControlMaster
     /// carrying the tunnel's forwards. Duo/passphrase prompts happen there;
     /// after authentication ssh forks away and the window can be closed.
-    public static func masterArguments(for tunnel: Tunnel, controlPath: String, environment: Environment = Environment()) -> [String] {
+    ///
+    /// - Parameter configuredForwards: forwards the user's ssh config already
+    ///   defines for this host (from `ssh -G`). They stay active, as they
+    ///   would for a terminal `ssh <host>`, and are not added a second time —
+    ///   ssh would fail to bind the duplicate and, with ExitOnForwardFailure,
+    ///   exit. (ClearAllForwardings is not an option: it also clears the
+    ///   forwards given on the command line.)
+    public static func masterArguments(for tunnel: Tunnel, controlPath: String, configuredForwards: [Forward] = [], environment: Environment = Environment()) -> [String] {
         var args: [String] = ["-M", "-N", "-f"]
 
         func option(_ key: String, _ value: String) {
@@ -55,9 +62,6 @@ public struct SSHCommandBuilder {
         }
 
         option("ControlPath", controlPath)
-        // Forwards are exactly what Lincoln shows, even if the alias already
-        // carries DynamicForward/LocalForward lines in ssh_config.
-        option("ClearAllForwardings", "yes")
         option("ExitOnForwardFailure", "yes")
         // Keys only. Keyboard-interactive stays enabled for Duo.
         option("PasswordAuthentication", "no")
@@ -70,7 +74,7 @@ public struct SSHCommandBuilder {
             args.append(identity)
             option("IdentitiesOnly", "yes")
         }
-        for forward in tunnel.forwards where forward.isValid {
+        for forward in tunnel.forwards where forward.isValid && !configuredForwards.contains(where: { $0.listensLike(forward) }) {
             args.append(contentsOf: forward.sshArguments)
         }
         for extra in tunnel.extraOptions {
@@ -111,8 +115,8 @@ public struct SSHCommandBuilder {
 
     /// The `.command` script Terminal.app runs. It records ssh's exit status
     /// in `statusFile` so Lincoln learns about failures without owning a tty.
-    public static func terminalScript(for tunnel: Tunnel, controlPath: String, statusFile: String, environment: Environment = Environment()) -> String {
-        let command = commandLine(executable: environment.sshExecutable, arguments: masterArguments(for: tunnel, controlPath: controlPath, environment: environment))
+    public static func terminalScript(for tunnel: Tunnel, controlPath: String, statusFile: String, configuredForwards: [Forward] = [], environment: Environment = Environment()) -> String {
+        let command = commandLine(executable: environment.sshExecutable, arguments: masterArguments(for: tunnel, controlPath: controlPath, configuredForwards: configuredForwards, environment: environment))
         let name = shellQuoted(tunnel.displayName)
         let destination = shellQuoted(tunnel.destinationSummary)
         let status = shellQuoted(statusFile)

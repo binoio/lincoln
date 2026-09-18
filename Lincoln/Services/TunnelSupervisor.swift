@@ -189,11 +189,15 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
             try fileManager.createDirectory(at: stateDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             removeLaunchStatus()
             let builderEnvironment = environment.builderEnvironment
+            let configured = resolved.destination.configuredForwards
             lastCommandLine = SSHCommandBuilder.commandLine(
                 executable: builderEnvironment.sshExecutable,
-                arguments: SSHCommandBuilder.masterArguments(for: tunnel, controlPath: resolved.path, environment: builderEnvironment)
+                arguments: SSHCommandBuilder.masterArguments(for: tunnel, controlPath: resolved.path, configuredForwards: configured, environment: builderEnvironment)
             )
-            let script = SSHCommandBuilder.terminalScript(for: tunnel, controlPath: resolved.path, statusFile: statusFileURL.path, environment: builderEnvironment)
+            let script = SSHCommandBuilder.terminalScript(for: tunnel, controlPath: resolved.path, statusFile: statusFileURL.path, configuredForwards: configured, environment: builderEnvironment)
+            if !configured.isEmpty {
+                LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): ssh config already forwards \(configured.map(\.summary).joined(separator: ", ")); those stay active and are not added twice")
+            }
             lastScriptURL = try launcher.launch(script: script, name: tunnel.displayName)
             LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): launched control master in Terminal", details: lastCommandLine)
             if !resolved.isFromConfig {

@@ -32,9 +32,11 @@ final class SSHEnvironmentTests: XCTestCase {
         controlmaster auto
         controlpath /Users/alice/.ssh/sockets/socket-alice@tigressgateway.princeton.edu:22
         """
-        let destination = SSHEnvironment.destination(fromConfigDump: dump)
-        XCTAssertEqual(destination, SSHDestination(user: "alice", hostName: "tigressgateway.princeton.edu", port: 22,
-                                                   configuredControlPath: "/Users/alice/.ssh/sockets/socket-alice@tigressgateway.princeton.edu:22"))
+        let destination = SSHEnvironment.destination(fromConfigDump: dump + "\ndynamicforward 1080\nlocalforward 10445 [files.princeton.edu]:445\nforwardagent no\n")
+        XCTAssertEqual(destination?.user, "alice")
+        XCTAssertEqual(destination?.hostName, "tigressgateway.princeton.edu")
+        XCTAssertEqual(destination?.configuredControlPath, "/Users/alice/.ssh/sockets/socket-alice@tigressgateway.princeton.edu:22")
+        XCTAssertEqual(destination?.configuredForwards.map(\.specification), ["1080", "10445:files.princeton.edu:445"])
         XCTAssertNil(SSHEnvironment.destination(fromConfigDump: "hostname h\ncontrolpath none\n")?.configuredControlPath)
         XCTAssertEqual(SSHEnvironment.destination(fromConfigDump: "hostname h\n")?.port, 22)
         XCTAssertNil(SSHEnvironment.destination(fromConfigDump: "user alice\n"))
