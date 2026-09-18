@@ -8,6 +8,7 @@ final class TunnelManagerTests: XCTestCase {
     private var store: TunnelStore!
     private var settings: SettingsManager!
     private var launcher: MockTerminalLauncher!
+    private var headless: MockHeadlessLauncher!
     private var socket: MockControlSocket!
     private var environment: MockSSHEnvironment!
     private var notifier: MockNotifier!
@@ -23,6 +24,11 @@ final class TunnelManagerTests: XCTestCase {
         socket = MockControlSocket()
         environment = MockSSHEnvironment()
         notifier = MockNotifier()
+        headless = MockHeadlessLauncher()
+        headless.socket = socket
+        headless.socketPath = environment.resolved!.path
+        // Manager tests exercise the Terminal flow unless stated otherwise.
+        settings.connectSilentlyFirst = false
     }
 
     override func tearDown() async throws {
@@ -35,6 +41,7 @@ final class TunnelManagerTests: XCTestCase {
             settings: settings,
             environment: environment,
             launcher: launcher,
+            headless: headless,
             socket: socket,
             notifier: notifier,
             configParser: SSHConfigParser(homeDirectory: home ?? URL(fileURLWithPath: "/nonexistent"))
@@ -123,6 +130,19 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertEqual(launcher.launches.map(\.name), ["Auto"])
         XCTAssertTrue(manager.supervisors[0].state.isConnecting)
         XCTAssertEqual(manager.supervisors[1].state, .idle)
+    }
+
+    func testSilentSettingIsConsultedPerLaunch() async {
+        let manager = makeManager()
+        manager.load()
+        let supervisor = manager.add(TestFixtures.tunnel())
+        settings.connectSilentlyFirst = true
+        manager.connect(id: supervisor.id)
+        await drainMainQueue()
+        XCTAssertEqual(headless.launches.count, 1)
+        XCTAssertTrue(launcher.launches.isEmpty)
+        await manager.pollAll()
+        XCTAssertTrue(supervisor.state.isConnected)
     }
 
     func testExternallyStartedMasterIsAdoptedByPolling() async {

@@ -34,6 +34,29 @@ final class MockTerminalLauncher: TerminalLaunching {
 }
 
 @MainActor
+final class MockHeadlessLauncher: HeadlessMasterLaunching {
+    private(set) var launches: [[String]] = []
+    private(set) var timeouts: [TimeInterval] = []
+    /// Result returned to the supervisor; default is a silent success.
+    var result = SSHCommandResult(standardOutput: "", standardError: "", exitCode: 0)
+    /// Simulate the master appearing on this socket path when the launch succeeds.
+    var socket: MockControlSocket?
+    var socketPath: String?
+
+    func launchMaster(arguments: [String], timeout: TimeInterval) async -> SSHCommandResult {
+        launches.append(arguments)
+        timeouts.append(timeout)
+        if result.exitCode == 0, let socket = socket, let path = socketPath {
+            socket.running[path] = 9001
+        }
+        return result
+    }
+
+    static let duoDenied = SSHCommandResult(standardOutput: "", standardError: "alice@tigressgateway.princeton.edu: Permission denied (keyboard-interactive).\n", exitCode: 255)
+    static let refused = SSHCommandResult(standardOutput: "", standardError: "ssh: connect to host tg port 22: Connection refused\n", exitCode: 255)
+}
+
+@MainActor
 final class MockControlSocket: ControlSocketChecking {
     /// Socket paths currently "running", with their pid.
     var running: [String: Int32] = [:]

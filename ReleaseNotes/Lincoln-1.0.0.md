@@ -4,7 +4,7 @@ Initial release of **Lincoln** — the macOS GUI Dock and Menu Bar app for estab
 
 ### Features
 - **Tunnel Management**: Create, import, connect, disconnect, reconfigure and reorder SOCKS proxies and local/remote port forwards from the main window or the menu bar.
-- **Terminal.app Console**: Connecting opens a Terminal window running ssh as a backgrounding ControlMaster; Duo, passphrase and host-key prompts are answered there with your usual shell, keys and agent.
+- **Silent Connect, Terminal When Needed**: Lincoln starts ssh as a backgrounding ControlMaster with key authentication only; a Terminal window opens only when ssh needs a Duo answer, a passphrase or a host-key confirmation.
 - **Shared Connections**: Tunnels use the ControlPath from your ssh config, so terminal sessions and ProxyJump hops reuse them without a second Duo prompt — and tunnels started by hand appear in Lincoln.
 - **Drop Detection**: Control sockets are polled and re-checked on network changes and wake; a dropped tunnel is flagged and notified, never reconnected unasked.
 - **Non-Destructive Import**: Reads `~/.ssh/config` (including `Include`s) to offer host aliases and existing forwards; never writes your ssh configuration.

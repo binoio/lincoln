@@ -34,6 +34,7 @@ final class SettingsManager: ObservableObject {
         static let showMenuBarItem = "lincoln.showMenuBarItem"
         static let hideDockIcon = "lincoln.hideDockIcon"
         static let notificationsEnabled = "lincoln.notificationsEnabled"
+        static let connectSilentlyFirst = "lincoln.connectSilentlyFirst"
         static let sshExecutable = "lincoln.sshExecutable"
         static let extraPath = "lincoln.extraPath"
         static let serverAliveInterval = "lincoln.serverAliveInterval"
@@ -41,7 +42,7 @@ final class SettingsManager: ObservableObject {
         static let hasCompletedFirstRun = "lincoln.hasCompletedFirstRun"
 
         static var all: [String] {
-            [showMenuBarItem, hideDockIcon, notificationsEnabled, sshExecutable,
+            [showMenuBarItem, hideDockIcon, notificationsEnabled, connectSilentlyFirst, sshExecutable,
              extraPath, serverAliveInterval, serverAliveCountMax, hasCompletedFirstRun]
         }
     }
@@ -77,6 +78,12 @@ final class SettingsManager: ObservableObject {
 
     @Published var notificationsEnabled: Bool {
         didSet { defaults.set(notificationsEnabled, forKey: Key.notificationsEnabled) }
+    }
+
+    /// Try the master with keys only and no window; open Terminal.app only
+    /// when ssh needs a person (Duo, passphrase, host key).
+    @Published var connectSilentlyFirst: Bool {
+        didSet { defaults.set(connectSilentlyFirst, forKey: Key.connectSilentlyFirst) }
     }
 
     @Published var sshExecutable: String {
@@ -118,6 +125,7 @@ final class SettingsManager: ObservableObject {
         showMenuBarItem = defaults.object(forKey: Key.showMenuBarItem) as? Bool ?? true
         hideDockIcon = defaults.bool(forKey: Key.hideDockIcon)
         notificationsEnabled = defaults.object(forKey: Key.notificationsEnabled) as? Bool ?? true
+        connectSilentlyFirst = defaults.object(forKey: Key.connectSilentlyFirst) as? Bool ?? true
         sshExecutable = defaults.string(forKey: Key.sshExecutable) ?? SettingsManager.defaultSSHExecutable
         extraPath = defaults.string(forKey: Key.extraPath) ?? SettingsManager.defaultExtraPath
         serverAliveInterval = defaults.object(forKey: Key.serverAliveInterval) as? Int ?? 30

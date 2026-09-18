@@ -5,6 +5,7 @@ import LincolnCore
 @MainActor
 final class TunnelSupervisorTests: XCTestCase {
     private var launcher: MockTerminalLauncher!
+    private var headless: MockHeadlessLauncher!
     private var socket: MockControlSocket!
     private var environment: MockSSHEnvironment!
     private var notifier: MockNotifier!
@@ -18,6 +19,9 @@ final class TunnelSupervisorTests: XCTestCase {
         launcher = MockTerminalLauncher()
         socket = MockControlSocket()
         environment = MockSSHEnvironment()
+        headless = MockHeadlessLauncher()
+        headless.socket = socket
+        headless.socketPath = environment.resolved!.path
         notifier = MockNotifier()
         stateDirectory = TestFixtures.temporaryDirectory("state")
         tunnel = TestFixtures.tunnel()
@@ -28,8 +32,12 @@ final class TunnelSupervisorTests: XCTestCase {
         try? FileManager.default.removeItem(at: stateDirectory)
     }
 
-    private func makeSupervisor(_ tunnel: Tunnel) -> TunnelSupervisor {
-        TunnelSupervisor(tunnel: tunnel, launcher: launcher, socket: socket, environment: environment, notifier: notifier, stateDirectory: stateDirectory)
+    /// Terminal-only supervisor (silent connections off), as most of the
+    /// Terminal-flow tests expect.
+    private func makeSupervisor(_ tunnel: Tunnel, silent: Bool = false) -> TunnelSupervisor {
+        let supervisor = TunnelSupervisor(tunnel: tunnel, launcher: launcher, headless: headless, socket: socket, environment: environment, notifier: notifier, stateDirectory: stateDirectory)
+        supervisor.connectSilentlyFirst = { silent }
+        return supervisor
     }
 
     private func writeStatus(_ status: Int32) throws {
@@ -60,6 +68,78 @@ final class TunnelSupervisorTests: XCTestCase {
         XCTAssertFalse(launcher.last!.script.contains("-D 1080"), "the config's DynamicForward 1080 stays active; adding it again would fail to bind")
         XCTAssertFalse(supervisor.lastCommandLine.contains("ClearAllForwardings"))
     }
+
+    // MARK: - Silent-first launches
+
+    func testSilentLaunchSucceedsWithoutTerminal() async {
+        supervisor = makeSupervisor(tunnel, silent: true)
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(headless.launches.count, 1)
+        XCTAssertTrue(launcher.launches.isEmpty, "no Terminal window")
+        XCTAssertTrue(headless.launches[0].contains("BatchMode=yes"))
+        XCTAssertTrue(headless.launches[0].contains("KbdInteractiveAuthentication=no"))
+        XCTAssertTrue(headless.launches[0].contains("PreferredAuthentications=publickey"))
+        XCTAssertEqual(headless.timeouts, [supervisor.connectTimeout])
+        XCTAssertEqual(supervisor.lastLaunchMode, .silent)
+        XCTAssertTrue(supervisor.state.isConnecting)
+        await supervisor.poll()
+        XCTAssertTrue(supervisor.state.isConnected)
+    }
+
+    func testDuoRequirementFallsBackToTerminal() async {
+        supervisor = makeSupervisor(tunnel, silent: true)
+        headless.result = MockHeadlessLauncher.duoDenied
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(headless.launches.count, 1)
+        XCTAssertEqual(launcher.launches.count, 1, "Terminal opens for the Duo prompt")
+        XCTAssertFalse(launcher.last!.script.contains("BatchMode"), "the Terminal run may prompt")
+        XCTAssertEqual(supervisor.lastLaunchMode, .terminal(reason: "alice@tigressgateway.princeton.edu: Permission denied (keyboard-interactive)."))
+        XCTAssertTrue(supervisor.state.isConnecting)
+        XCTAssertNil(supervisor.lastError)
+    }
+
+    func testHardFailureReportsSSHMessageWithoutTerminal() async {
+        supervisor = makeSupervisor(tunnel, silent: true)
+        headless.result = MockHeadlessLauncher.refused
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertTrue(launcher.launches.isEmpty)
+        XCTAssertEqual(supervisor.state, .failed(reason: "ssh: connect to host tg port 22: Connection refused"))
+        XCTAssertEqual(notifier.posted.last?.title, "Gateway did not connect")
+    }
+
+    func testSilentTimeoutFails() async {
+        supervisor = makeSupervisor(tunnel, silent: true)
+        supervisor.connectTimeout = 7
+        headless.result = SSHCommandResult(standardOutput: "", standardError: "", exitCode: 143, timedOut: true)
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(supervisor.state, .failed(reason: "ssh did not finish within 7s"))
+        XCTAssertTrue(launcher.launches.isEmpty)
+    }
+
+    func testSilentOffGoesStraightToTerminal() async {
+        supervisor = makeSupervisor(tunnel, silent: false)
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertTrue(headless.launches.isEmpty)
+        XCTAssertEqual(launcher.launches.count, 1)
+        XCTAssertEqual(supervisor.lastLaunchMode, .terminal(reason: "silent connections are off in Settings"))
+    }
+
+    func testStopDuringSilentLaunchIsHonored() async {
+        supervisor = makeSupervisor(tunnel, silent: true)
+        headless.result = MockHeadlessLauncher.duoDenied
+        supervisor.start()
+        supervisor.stop()
+        await drainMainQueue()
+        XCTAssertTrue(launcher.launches.isEmpty, "stop before the silent attempt returned must not open Terminal")
+        XCTAssertEqual(supervisor.state, .idle)
+    }
+
+    // MARK: - Terminal flow
 
     func testInvalidTunnelDoesNotStart() async {
         supervisor = makeSupervisor(Tunnel(name: "x", host: ""))
@@ -93,9 +173,9 @@ final class TunnelSupervisorTests: XCTestCase {
         await drainMainQueue()
         try writeStatus(255)
         await supervisor.poll()
-        XCTAssertEqual(supervisor.state, .failed(reason: "ssh exited with status 255 — see the Terminal window"))
+        XCTAssertEqual(supervisor.state, .failed(reason: "ssh exited with status 255"))
         XCTAssertEqual(notifier.posted.last?.title, "Gateway did not connect")
-        XCTAssertEqual(supervisor.lastError, "ssh exited with status 255 — see the Terminal window")
+        XCTAssertEqual(supervisor.lastError, "ssh exited with status 255")
         XCTAssertEqual(socket.checks.count, 0, "no socket check after a failed launch")
     }
 

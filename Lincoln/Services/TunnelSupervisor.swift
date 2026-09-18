@@ -30,9 +30,26 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
 
     private var machine: TunnelStateMachine
     private let launcher: TerminalLaunching
+    private let headless: HeadlessMasterLaunching?
     private let socket: ControlSocketChecking
     private let environment: SSHEnvironmentProviding
     private let notifier: Notifying?
+    /// Consulted at each launch; false forces the Terminal flow.
+    var connectSilentlyFirst: () -> Bool = { true }
+    /// How the last launch was performed, for the status view.
+    @Published private(set) var lastLaunchMode: LaunchMode?
+
+    enum LaunchMode: Equatable {
+        case silent
+        case terminal(reason: String)
+
+        var description: String {
+            switch self {
+            case .silent: return "silently (keys only)"
+            case .terminal(let reason): return "in Terminal.app — \(reason)"
+            }
+        }
+    }
     private let stateDirectory: URL
     private let fileManager: FileManager
     private var isPolling = false
@@ -41,6 +58,7 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
     init(
         tunnel: Tunnel,
         launcher: TerminalLaunching,
+        headless: HeadlessMasterLaunching? = nil,
         socket: ControlSocketChecking,
         environment: SSHEnvironmentProviding,
         notifier: Notifying? = nil,
@@ -51,6 +69,7 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
         self.id = tunnel.id
         self.tunnel = tunnel
         self.launcher = launcher
+        self.headless = headless
         self.socket = socket
         self.environment = environment
         self.notifier = notifier
@@ -156,11 +175,11 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
 
     private func perform(_ effect: TunnelEffect) {
         switch effect {
-        case .launchInTerminal:
+        case .launch:
             launchGeneration += 1
             let generation = launchGeneration
             Task { @MainActor in
-                await launchInTerminal(generation: generation)
+                await launch(generation: generation)
             }
         case .sendExit:
             Task { @MainActor in
@@ -178,7 +197,7 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
         }
     }
 
-    private func launchInTerminal(generation: Int) async {
+    private func launch(generation: Int) async {
         guard let resolved = await resolvedControlPath(refresh: true) else {
             handle(.launchFailed(reason: "Could not resolve ssh configuration for \(tunnel.trimmedHost) (see Diagnostic Logs)"))
             return
@@ -186,23 +205,60 @@ final class TunnelSupervisor: ObservableObject, Identifiable {
         guard generation == launchGeneration, state.isConnecting else { return }
         do {
             try environment.prepareControlPathDirectory(resolved.path)
+        } catch {
+            handle(.launchFailed(reason: error.localizedDescription))
+            return
+        }
+        let configured = resolved.destination.configuredForwards
+        if !configured.isEmpty {
+            LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): ssh config already forwards \(configured.map(\.summary).joined(separator: ", ")); those stay active and are not added twice")
+        }
+        if !resolved.isFromConfig {
+            LogStore.log(level: .warning, category: "SSH", message: "\(tunnel.displayName): ssh config has no ControlPath for this host; using \(resolved.path). Terminal sessions will not share it unless they pass the same ControlPath.")
+        }
+
+        var terminalReason = "silent connections are off in Settings"
+        if connectSilentlyFirst(), let headless = headless {
+            let builderEnvironment = environment.builderEnvironment
+            let arguments = SSHCommandBuilder.headlessMasterArguments(for: tunnel, controlPath: resolved.path, configuredForwards: configured, environment: builderEnvironment)
+            lastCommandLine = SSHCommandBuilder.commandLine(executable: builderEnvironment.sshExecutable, arguments: arguments)
+            lastLaunchMode = .silent
+            LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): starting control master silently", details: lastCommandLine)
+            let result = await headless.launchMaster(arguments: arguments, timeout: connectTimeout)
+            guard generation == launchGeneration, state.isConnecting else { return }
+            if result.exitCode == 0 {
+                handle(.launchExited(status: 0))
+                return
+            }
+            if result.timedOut {
+                handle(.launchFailed(reason: "ssh did not finish within \(Int(connectTimeout))s"))
+                return
+            }
+            guard SSHCommandBuilder.requiresInteraction(stderr: result.standardError) else {
+                let reason = SSHCommandBuilder.failureReason(stderr: result.standardError, status: result.exitCode)
+                LogStore.log(level: .error, category: "SSH", message: "\(tunnel.displayName): silent connection failed", details: result.standardError)
+                handle(.launchFailed(reason: reason))
+                return
+            }
+            terminalReason = SSHCommandBuilder.failureReason(stderr: result.standardError, status: result.exitCode)
+            LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): ssh needs a prompt (\(terminalReason)); continuing in Terminal.app")
+        }
+        launchInTerminal(resolved: resolved, configured: configured, reason: terminalReason)
+    }
+
+    private func launchInTerminal(resolved: ResolvedControlPath, configured: [Forward], reason: String) {
+        do {
             try fileManager.createDirectory(at: stateDirectory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             removeLaunchStatus()
             let builderEnvironment = environment.builderEnvironment
-            let configured = resolved.destination.configuredForwards
             lastCommandLine = SSHCommandBuilder.commandLine(
                 executable: builderEnvironment.sshExecutable,
                 arguments: SSHCommandBuilder.masterArguments(for: tunnel, controlPath: resolved.path, configuredForwards: configured, environment: builderEnvironment)
             )
+            lastLaunchMode = .terminal(reason: reason)
             let script = SSHCommandBuilder.terminalScript(for: tunnel, controlPath: resolved.path, statusFile: statusFileURL.path, configuredForwards: configured, environment: builderEnvironment)
-            if !configured.isEmpty {
-                LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): ssh config already forwards \(configured.map(\.summary).joined(separator: ", ")); those stay active and are not added twice")
-            }
             lastScriptURL = try launcher.launch(script: script, name: tunnel.displayName)
             LogStore.log(level: .info, category: "SSH", message: "\(tunnel.displayName): launched control master in Terminal", details: lastCommandLine)
-            if !resolved.isFromConfig {
-                LogStore.log(level: .warning, category: "SSH", message: "\(tunnel.displayName): ssh config has no ControlPath for this host; using \(resolved.path). Terminal sessions will not share it unless they pass the same ControlPath.")
-            }
         } catch {
             LogStore.log(level: .error, category: "Terminal", message: "\(tunnel.displayName): could not launch Terminal", details: error.localizedDescription)
             handle(.launchFailed(reason: error.localizedDescription))

@@ -12,7 +12,7 @@ final class TunnelStateMachineTests: XCTestCase {
     func testHappyPath() {
         var (state, effects) = machine.transition(.idle, on: .start)
         XCTAssertEqual(state, .connecting(since: epoch))
-        XCTAssertEqual(effects, [.launchInTerminal])
+        XCTAssertEqual(effects, [.launch])
 
         (state, effects) = machine.transition(state, on: .masterMissing)
         XCTAssertEqual(state, .connecting(since: epoch), "no socket yet while Duo is answered in Terminal")
@@ -42,8 +42,8 @@ final class TunnelStateMachineTests: XCTestCase {
 
     func testLaunchFailureAndTimeout() {
         let (failed, effects) = machine.transition(.connecting(since: epoch), on: .launchExited(status: 255))
-        XCTAssertEqual(failed, .failed(reason: "ssh exited with status 255 — see the Terminal window"))
-        XCTAssertEqual(effects, [.notifyFailed(reason: "ssh exited with status 255 — see the Terminal window")])
+        XCTAssertEqual(failed, .failed(reason: "ssh exited with status 255"))
+        XCTAssertEqual(effects, [.notifyFailed(reason: "ssh exited with status 255")])
 
         let (notStarted, _) = machine.transition(.connecting(since: epoch), on: .launchFailed(reason: "Terminal.app was not found."))
         XCTAssertEqual(notStarted, .failed(reason: "Terminal.app was not found."))
@@ -55,7 +55,7 @@ final class TunnelStateMachineTests: XCTestCase {
         // Retrying from failed launches Terminal again.
         let (retry, retryEffects) = machine.transition(failed, on: .start)
         XCTAssertEqual(retry, .connecting(since: epoch))
-        XCTAssertEqual(retryEffects, [.launchInTerminal])
+        XCTAssertEqual(retryEffects, [.launch])
     }
 
     func testDropIsNotifiedAndNeverAutoReconnects() {
@@ -66,7 +66,7 @@ final class TunnelStateMachineTests: XCTestCase {
         XCTAssertFalse(dropped.isActive)
         // Stays dropped across further checks; only a user start relaunches.
         XCTAssertEqual(machine.transition(dropped, on: .masterMissing).0, dropped)
-        XCTAssertEqual(machine.transition(dropped, on: .start).1, [.launchInTerminal])
+        XCTAssertEqual(machine.transition(dropped, on: .start).1, [.launch])
         // A user stop acknowledges the drop.
         XCTAssertEqual(machine.transition(dropped, on: .stop).0, .idle)
     }
@@ -110,6 +110,6 @@ final class TunnelStateMachineTests: XCTestCase {
         XCTAssertTrue(TunnelState.failed(reason: "x").needsAttention)
         XCTAssertEqual(TunnelState.failed(reason: "x").detail, "x")
         XCTAssertNil(TunnelState.idle.detail)
-        XCTAssertEqual(TunnelState.connecting(since: epoch).label, "Connecting in Terminal")
+        XCTAssertEqual(TunnelState.connecting(since: epoch).label, "Connecting")
     }
 }

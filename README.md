@@ -7,7 +7,7 @@ A macOS GUI Dock and Menu Bar app for establishing, maintaining, disconnecting a
 ## Features
 
 - **Tunnels as first-class objects**: Each tunnel is a host (an alias from `~/.ssh/config`, or a hostname) plus the SOCKS/local/remote forwards you want. Connect, disconnect, reconfigure and reorder them from the main window or the menu bar.
-- **Terminal.app is the console**: Connecting opens a Terminal window running `ssh -M -N -f …` — Duo, passphrases and host keys are answered there, with your login shell, keys and agent. After authentication ssh backgrounds itself as a **ControlMaster** and the window can be closed.
+- **Silent when keys suffice, Terminal.app when a person is needed**: Connect starts `ssh -M -N -f …` from Lincoln with key authentication only. If ssh needs more — a Duo prompt, a key passphrase, an unknown host key — Lincoln opens a Terminal window for exactly that, with your login shell, keys and agent; after authentication ssh backgrounds itself as a **ControlMaster** and the window can be closed.
 - **Shared with your terminal by default**: Lincoln uses the `ControlPath` your ssh config already defines (via `ssh -G`), so a terminal `ssh della` through `ProxyJump tg` reuses the tunnel and skips a second Duo prompt. Tunnels you start by hand show up in Lincoln too.
 - **Watched, not babysat**: Lincoln polls the control sockets (`ssh -O check`) and reacts to network changes and wake from sleep. A dropped tunnel is shown and notified — never reconnected behind your back, since every connection may cost a Duo push.
 - **Keys only**: Password authentication is disabled on every tunnel Lincoln starts.
@@ -20,8 +20,11 @@ A macOS GUI Dock and Menu Bar app for establishing, maintaining, disconnecting a
 ## How a tunnel runs
 
 ```
-Lincoln ──writes──▶ ~/Library/Application Support/Lincoln/commands/<name>.command
-        ──opens──▶ Terminal.app ──runs──▶ ssh -M -N -f -o ControlPath=<from ssh -G> -D 1080 … tg
+Lincoln ──runs──▶ ssh -M -N -f -o BatchMode=yes -o PreferredAuthentications=publickey -o ControlPath=<from ssh -G> -D 1080 … tg
+                   │ keys in agent/keychain → master up, no window
+                   │ "Permission denied (keyboard-interactive)" / passphrase / host key →
+                   ▼
+        ──opens──▶ Terminal.app ──runs──▶ ssh -M -N -f -o ControlPath=<same> -D 1080 … tg
                                                 │  (Duo / passphrase answered here)
                                                 ▼
                                    control socket  ◀── ssh -O check / -O exit (Lincoln)

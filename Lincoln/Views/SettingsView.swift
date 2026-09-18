@@ -37,6 +37,13 @@ public struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Section("Connecting") {
+                    Toggle("Connect silently when keys suffice", isOn: $settings.connectSilentlyFirst)
+                    Text("Lincoln starts the control master itself with key authentication only. Terminal.app opens only when ssh needs you: a Duo prompt, a key passphrase, or a new host key. Turn off to always connect in Terminal.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Notifications") {
                     Toggle("Notify when a tunnel drops or fails to connect", isOn: $settings.notificationsEnabled)
                 }

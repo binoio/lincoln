@@ -86,6 +86,7 @@ struct LincolnApp: App {
             settings: settings,
             environment: environment,
             launcher: TerminalAppLauncher(),
+            headless: environment,
             socket: ControlSocketClient(environment: environment),
             notifier: notifier
         )

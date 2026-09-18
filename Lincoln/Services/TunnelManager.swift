@@ -24,6 +24,7 @@ final class TunnelManager: ObservableObject {
     let settings: SettingsManager
     let environment: SSHEnvironmentProviding
     private let launcher: TerminalLaunching
+    private let headless: HeadlessMasterLaunching?
     private let socket: ControlSocketChecking
     private let notifier: Notifying?
     private let configParser: SSHConfigParser
@@ -40,6 +41,7 @@ final class TunnelManager: ObservableObject {
         settings: SettingsManager,
         environment: SSHEnvironmentProviding,
         launcher: TerminalLaunching,
+        headless: HeadlessMasterLaunching? = nil,
         socket: ControlSocketChecking,
         notifier: Notifying? = nil,
         configParser: SSHConfigParser = SSHConfigParser(),
@@ -49,6 +51,7 @@ final class TunnelManager: ObservableObject {
         self.settings = settings
         self.environment = environment
         self.launcher = launcher
+        self.headless = headless
         self.socket = socket
         self.notifier = notifier
         self.configParser = configParser
@@ -140,11 +143,13 @@ final class TunnelManager: ObservableObject {
         let supervisor = TunnelSupervisor(
             tunnel: tunnel,
             launcher: launcher,
+            headless: headless,
             socket: socket,
             environment: environment,
             notifier: notifier,
             stateDirectory: stateDirectory
         )
+        supervisor.connectSilentlyFirst = { [weak self] in self?.settings.connectSilentlyFirst ?? true }
         supervisor.onStateChange = { [weak self] _ in
             self?.stateVersion += 1
         }

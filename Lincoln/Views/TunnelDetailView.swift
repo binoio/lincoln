@@ -75,7 +75,9 @@ struct TunnelDetailView: View {
                         .lineLimit(1)
                         .help(error)
                 } else if supervisor.state.isConnecting {
-                    Text("Answer any Duo or passphrase prompt in the Terminal window; the tunnel appears here once the control socket is up.")
+                    Text(supervisor.lastLaunchMode == .silent
+                         ? "Starting the control master with your keys…"
+                         : "Answer the prompt in the Terminal window; the tunnel appears here once the control socket is up.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)

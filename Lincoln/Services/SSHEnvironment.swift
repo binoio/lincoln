@@ -46,10 +46,18 @@ struct SSHCommandResult: Equatable {
     var standardOutput: String
     var standardError: String
     var exitCode: Int32
+    /// True when the watchdog killed the process.
+    var timedOut = false
+}
+
+/// Starts a control master from Lincoln itself, with no terminal.
+@MainActor
+protocol HeadlessMasterLaunching {
+    func launchMaster(arguments: [String], timeout: TimeInterval) async -> SSHCommandResult
 }
 
 @MainActor
-final class SSHEnvironment: SSHEnvironmentProviding {
+final class SSHEnvironment: SSHEnvironmentProviding, HeadlessMasterLaunching {
     private let settings: SettingsManager
     private let fileManager: FileManager
     private let homeDirectory: URL
@@ -161,15 +169,22 @@ final class SSHEnvironment: SSHEnvironmentProviding {
         await run(arguments: ["-V"])
     }
 
-    func run(arguments: [String]) async -> SSHCommandResult {
+    func run(arguments: [String], timeout: TimeInterval? = nil) async -> SSHCommandResult {
         let executable = settings.sshExecutable
         let environment = processEnvironment()
         return await Task.detached(priority: .userInitiated) {
-            SSHEnvironment.runSynchronously(executable: executable, arguments: arguments, environment: environment)
+            SSHEnvironment.runSynchronously(executable: executable, arguments: arguments, environment: environment, timeout: timeout)
         }.value
     }
 
-    nonisolated static func runSynchronously(executable: String, arguments: [String], environment: [String: String]) -> SSHCommandResult {
+    /// `ssh -M -N -f …` run by Lincoln. ssh forks the master away and the
+    /// parent exits once the forwards are up, so this returns promptly; the
+    /// watchdog covers a hang (e.g. a ProxyCommand that never answers).
+    func launchMaster(arguments: [String], timeout: TimeInterval) async -> SSHCommandResult {
+        await run(arguments: arguments, timeout: timeout)
+    }
+
+    nonisolated static func runSynchronously(executable: String, arguments: [String], environment: [String: String], timeout: TimeInterval? = nil) -> SSHCommandResult {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: executable)
         task.arguments = arguments
@@ -184,13 +199,30 @@ final class SSHEnvironment: SSHEnvironmentProviding {
         } catch {
             return SSHCommandResult(standardOutput: "", standardError: error.localizedDescription, exitCode: -1)
         }
-        let outData = stdout.fileHandleForReading.readDataToEndOfFile()
+        var watchdog: DispatchWorkItem?
+        if let timeout = timeout {
+            let item = DispatchWorkItem { if task.isRunning { task.terminate() } }
+            watchdog = item
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: item)
+        }
+        // Read both pipes concurrently so a chatty stderr cannot deadlock us.
+        var outData = Data()
+        let group = DispatchGroup()
+        group.enter()
+        DispatchQueue.global().async {
+            outData = stdout.fileHandleForReading.readDataToEndOfFile()
+            group.leave()
+        }
         let errData = stderr.fileHandleForReading.readDataToEndOfFile()
+        group.wait()
         task.waitUntilExit()
+        let timedOut = watchdog.map { $0.isCancelled == false && task.terminationReason == .uncaughtSignal } ?? false
+        watchdog?.cancel()
         return SSHCommandResult(
             standardOutput: String(decoding: outData, as: UTF8.self),
             standardError: String(decoding: errData, as: UTF8.self),
-            exitCode: task.terminationStatus
+            exitCode: task.terminationStatus,
+            timedOut: timedOut
         )
     }
 }

@@ -20,6 +20,7 @@ final class SettingsManagerTests: XCTestCase {
         XCTAssertTrue(settings.showMenuBarItem)
         XCTAssertFalse(settings.hideDockIcon)
         XCTAssertTrue(settings.notificationsEnabled)
+        XCTAssertTrue(settings.connectSilentlyFirst)
         XCTAssertEqual(settings.sshExecutable, "/usr/bin/ssh")
         XCTAssertEqual(settings.extraPath, SettingsManager.defaultExtraPath)
         XCTAssertEqual(settings.serverAliveInterval, 30)
@@ -31,12 +32,14 @@ final class SettingsManagerTests: XCTestCase {
         let settings = make()
         settings.hideDockIcon = true
         settings.notificationsEnabled = false
+        settings.connectSilentlyFirst = false
         settings.sshExecutable = "/opt/homebrew/bin/ssh"
         settings.serverAliveInterval = 15
 
         let reloaded = make()
         XCTAssertTrue(reloaded.hideDockIcon)
         XCTAssertFalse(reloaded.notificationsEnabled)
+        XCTAssertFalse(reloaded.connectSilentlyFirst)
         XCTAssertEqual(reloaded.sshExecutable, "/opt/homebrew/bin/ssh")
         XCTAssertEqual(reloaded.serverAliveInterval, 15)
     }

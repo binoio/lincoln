@@ -57,6 +57,12 @@ struct TunnelEditorView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    if let mode = supervisor.lastLaunchMode {
+                        LabeledContent("Launched:") {
+                            Text(mode.description)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     if !supervisor.lastCommandLine.isEmpty {
                         LabeledContent("Last launch:") {
                             Text(supervisor.lastCommandLine)
@@ -84,7 +90,7 @@ struct TunnelEditorView: View {
                             .autocorrectionDisabled()
                         Button("Choose…") { chooseIdentityFile() }
                     }
-                    Text("Only SSH keys are used (PasswordAuthentication is disabled). Connecting opens a Terminal.app window where Duo and passphrase prompts are answered; ssh then backgrounds itself as a control master and the window can be closed.")
+                    Text("Only SSH keys are used (PasswordAuthentication is disabled). Lincoln connects silently when your key is in the agent or keychain; if ssh needs a Duo answer, a passphrase or a host-key confirmation, a Terminal.app window opens for it and can be closed once ssh has backgrounded itself.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

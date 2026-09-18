@@ -12,7 +12,8 @@ import Foundation
 public enum TunnelState: Equatable {
     /// No control master for this tunnel.
     case idle
-    /// A Terminal window is running ssh; waiting for the socket to appear.
+    /// ssh is being started (silently, or in Terminal when a prompt is
+    /// needed); waiting for the socket to appear.
     case connecting(since: Date)
     case connected(pid: Int32?, since: Date)
     /// `ssh -O exit` was sent; waiting for the socket to disappear.
@@ -51,7 +52,7 @@ public enum TunnelState: Equatable {
     public var label: String {
         switch self {
         case .idle: return "Disconnected"
-        case .connecting: return "Connecting in Terminal"
+        case .connecting: return "Connecting"
         case .connected: return "Connected"
         case .disconnecting: return "Disconnecting"
         case .dropped: return "Dropped"
@@ -76,7 +77,7 @@ public enum TunnelEvent: Equatable {
     case masterRunning(pid: Int32?)
     /// `ssh -O check` found no master (socket missing or dead).
     case masterMissing
-    /// The ssh started in Terminal exited (status from the .command script).
+    /// The launched ssh exited (headless result, or the .command script's status).
     case launchExited(status: Int32)
     /// Lincoln could not even start ssh (ssh -G failed, Terminal missing…).
     case launchFailed(reason: String)
@@ -87,7 +88,8 @@ public enum TunnelEvent: Equatable {
 }
 
 public enum TunnelEffect: Equatable {
-    case launchInTerminal
+    /// Start the control master (silently if possible, else in Terminal).
+    case launch
     case sendExit
     case notifyConnected
     case notifyDropped(reason: String)
@@ -107,7 +109,7 @@ public struct TunnelStateMachine {
 
         // MARK: Starting
         case (.idle, .start), (.dropped, .start), (.failed, .start):
-            return (.connecting(since: now()), [.launchInTerminal])
+            return (.connecting(since: now()), [.launch])
         case (.connecting, .start), (.connected, .start):
             return (state, [])
         case (.disconnecting, .start):
@@ -149,7 +151,7 @@ public struct TunnelStateMachine {
                 // ssh -f returned after auth; the next check confirms the socket.
                 return (state, [.log("ssh backgrounded; confirming control socket")])
             }
-            let reason = "ssh exited with status \(status) — see the Terminal window"
+            let reason = "ssh exited with status \(status)"
             return (.failed(reason: reason), [.notifyFailed(reason: reason)])
         case (_, .launchExited):
             return (state, [])

@@ -66,6 +66,35 @@ final class SSHCommandBuilderTests: XCTestCase {
         XCTAssertLessThan(args.firstIndex(of: "PasswordAuthentication=no")!, args.firstIndex(of: "PasswordAuthentication=yes")!)
     }
 
+    func testHeadlessMasterArguments() {
+        let args = SSHCommandBuilder.headlessMasterArguments(for: tunnel, controlPath: "/tmp/s")
+        XCTAssertEqual(Array(args.prefix(11)), [
+            "-M", "-N", "-f",
+            "-o", "ControlPath=/tmp/s",
+            "-o", "BatchMode=yes",
+            "-o", "KbdInteractiveAuthentication=no",
+            "-o", "PreferredAuthentications=publickey"
+        ])
+        XCTAssertTrue(args.contains("ExitOnForwardFailure=yes"))
+        XCTAssertEqual(args.suffix(2), ["--", "tg"])
+        // User extras come after the pinned options, so ours win.
+        var custom = tunnel
+        custom.extraOptions = [SSHOption(key: "BatchMode", value: "no")]
+        let customArgs = SSHCommandBuilder.headlessMasterArguments(for: custom, controlPath: "/tmp/s")
+        XCTAssertLessThan(customArgs.firstIndex(of: "BatchMode=yes")!, customArgs.firstIndex(of: "BatchMode=no")!)
+    }
+
+    func testInteractionDetectionAndFailureReason() {
+        XCTAssertTrue(SSHCommandBuilder.requiresInteraction(stderr: "alice@tg: Permission denied (keyboard-interactive).\n"))
+        XCTAssertTrue(SSHCommandBuilder.requiresInteraction(stderr: "Host key verification failed.\n"))
+        XCTAssertTrue(SSHCommandBuilder.requiresInteraction(stderr: "Enter passphrase for key '/x': \n"))
+        XCTAssertFalse(SSHCommandBuilder.requiresInteraction(stderr: "ssh: connect to host tg port 22: Connection refused\n"))
+        XCTAssertFalse(SSHCommandBuilder.requiresInteraction(stderr: "bind [127.0.0.1]:1080: Address already in use\n"))
+        XCTAssertEqual(SSHCommandBuilder.failureReason(stderr: "Pseudo-terminal will not be allocated because stdin is not a terminal.\nssh: connect to host tg port 22: Connection refused\n", status: 255),
+                       "ssh: connect to host tg port 22: Connection refused")
+        XCTAssertEqual(SSHCommandBuilder.failureReason(stderr: "", status: 255), "ssh exited with status 255")
+    }
+
     func testMasterPIDParsing() {
         XCTAssertEqual(SSHCommandBuilder.masterPID(fromCheckOutput: "Master running (pid=4242)\n"), 4242)
         XCTAssertNil(SSHCommandBuilder.masterPID(fromCheckOutput: "Control socket connect(/tmp/s): No such file or directory\n"))

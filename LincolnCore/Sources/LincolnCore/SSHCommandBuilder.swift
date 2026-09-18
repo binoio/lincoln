@@ -86,6 +86,45 @@ public struct SSHCommandBuilder {
         return args
     }
 
+    /// The same master, but started by Lincoln itself with no terminal:
+    /// only key authentication is attempted and nothing may prompt. Succeeds
+    /// silently when the agent/keychain holds the key; otherwise fails fast
+    /// (before any Duo push) so the Terminal flow can take over.
+    public static func headlessMasterArguments(for tunnel: Tunnel, controlPath: String, configuredForwards: [Forward] = [], environment: Environment = Environment()) -> [String] {
+        var args = masterArguments(for: tunnel, controlPath: controlPath, configuredForwards: configuredForwards, environment: environment)
+        // Insert right after ControlPath so these precede any user extras
+        // (ssh honors the first occurrence of an option).
+        let insertAt = 5
+        args.insert(contentsOf: [
+            "-o", "BatchMode=yes",
+            "-o", "KbdInteractiveAuthentication=no",
+            "-o", "PreferredAuthentications=publickey"
+        ], at: insertAt)
+        return args
+    }
+
+    /// Whether a failed headless attempt should be retried in Terminal.app
+    /// because ssh needed a person: another authentication factor, a key
+    /// passphrase, or a host-key confirmation.
+    public static func requiresInteraction(stderr: String) -> Bool {
+        let lowered = stderr.lowercased()
+        return lowered.contains("permission denied")
+            || lowered.contains("host key verification failed")
+            || lowered.contains("keyboard-interactive")
+            || lowered.contains("passphrase")
+            || lowered.contains("too many authentication failures")
+    }
+
+    /// Last meaningful line of ssh's stderr, for failure reasons.
+    public static func failureReason(stderr: String, status: Int32) -> String {
+        let line = stderr
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("Pseudo-terminal") && !$0.hasPrefix("Warning: Permanently added") }
+            .last
+        return line ?? "ssh exited with status \(status)"
+    }
+
     /// `ssh -O check`: exit 0 and "Master running (pid=N)" when the master is up.
     public static func checkArguments(for tunnel: Tunnel, controlPath: String) -> [String] {
         ["-O", "check", "-o", "ControlPath=\(controlPath)"] + destinationArguments(for: tunnel)
