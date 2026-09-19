@@ -66,6 +66,8 @@ if [[ "$USE_LOCAL" -eq 1 ]]; then
         echo "==> No local build found. Run Scripts/build.sh first." >&2
         exit 1
     fi
+    # `open -a` reads a relative path as an app *name*, so make it absolute.
+    APP_PATH="$(cd "$(dirname "$APP_PATH")" && pwd)/$(basename "$APP_PATH")"
     echo "==> Using local build: $APP_PATH"
 else
     echo "==> Downloading the latest $APP_NAME release"
