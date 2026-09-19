@@ -6,6 +6,21 @@
         <description>Most recent updates for Lincoln.</description>
         <language>en</language>
         <item>
+            <title>1.0.4</title>
+            <pubDate>Fri, 18 Sep 2026 20:33:14 -0400</pubDate>
+            <sparkle:version>1.0.4</sparkle:version>
+            <sparkle:shortVersionString>1.0.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Lincoln 1.0.4</h2>
+<p>Lincoln 1.0.4 fixes Duo logins and stops polling when nothing is connected.</p>
+<ul>
+  <li><strong>Duo works again</strong>: The control master was started with <code>NumberOfPasswordPrompts=0</code>, which OpenSSH also applies to keyboard-interactive authentication &mdash; so gateways that require Duo after the key were refused with &ldquo;Permission denied&rdquo; before any prompt. Only <code>PasswordAuthentication=no</code> is pinned now; keys stay mandatory and Duo prompts appear in Terminal as intended.</li>
+  <li><strong>No idle polling</strong>: <code>ssh -O check</code> runs on a timer only while a tunnel is connected or in transition. When nothing is active, Lincoln watches the control-socket directories instead, so a master started by hand in a terminal is still adopted immediately; it also re-checks on network changes, wake and when the app comes to the front.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.4/Lincoln-1.0.4.zip" length="2823830" type="application/octet-stream" sparkle:edSignature="iKoF565Bis9v1OFzfC1468EuZ0d/WSrQfqNxt5pKKkB2YorhcAKLYk6Oor5mh0MZzl6iWCc6Asbi4DsWH8wECQ=="/>
+        </item>
+        <item>
             <title>1.0.3</title>
             <pubDate>Fri, 18 Sep 2026 20:10:34 -0400</pubDate>
             <sparkle:version>1.0.3</sparkle:version>
@@ -35,20 +50,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.2/Lincoln-1.0.2.zip" length="2765350" type="application/octet-stream" sparkle:edSignature="5wyhVygLAobhg5/kBldbJODtpjAwJht4lY2ZQLjaoxr39Gg4WS1nGdyc0ZwzJD7IzcuvaaAYwy5mIPQTN64LAg=="/>
-        </item>
-        <item>
-            <title>1.0.1</title>
-            <pubDate>Fri, 18 Sep 2026 19:52:46 -0400</pubDate>
-            <sparkle:version>1.0.1</sparkle:version>
-            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Lincoln 1.0.1</h2>
-<p>Lincoln 1.0.1 keeps Terminal.app as the console and stops duplicating it inside the app.</p>
-<ul>
-  <li><strong>Copy ssh Command</strong>: The Terminal button and menu item are replaced by <strong>Copy ssh Command</strong> (&#8679;&#8984;C) in the tunnel header and the Tunnel menu. It copies an <code>ssh</code> command for your own terminal that opens a session on the host through the tunnel's control master, so no second Duo prompt is needed; the same command is shown under Status.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.1/Lincoln-1.0.1.zip" length="2772800" type="application/octet-stream" sparkle:edSignature="3Hq7ZTf/Cl8kS29hU3g+m73KiVl2O9cDlsReJXWlUE8HqcmF4rYa0Vi2W1PU/DnJynPl0NSCH52L09Z8X6/LDg=="/>
         </item>
     </channel>
 </rss>
