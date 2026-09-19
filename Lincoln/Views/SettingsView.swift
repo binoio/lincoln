@@ -38,10 +38,22 @@ public struct SettingsView: View {
                 }
 
                 Section("Connecting") {
-                    Toggle("Connect silently when keys suffice", isOn: $settings.connectSilentlyFirst)
-                    Text("Lincoln starts the control master itself with key authentication only. Terminal.app opens only when ssh needs you: a Duo prompt, a key passphrase, or a new host key. Turn off to always connect in Terminal.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Picker("When ssh needs a prompt:", selection: $settings.promptMode) {
+                        ForEach(SettingsManager.PromptMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.radioGroup)
+                    if settings.promptMode == .lincoln {
+                        Text("Lincoln starts the control master itself. If ssh needs you — a Duo passcode or push option, a key passphrase, a new host key — a Lincoln panel asks and passes your answer to ssh. Nothing is stored.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Toggle("Try silently with keys first", isOn: $settings.connectSilentlyFirst)
+                        Text("Terminal.app opens for prompts, with your login shell, keys and agent. With the toggle on, Terminal opens only when a key alone was not enough.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section("Notifications") {

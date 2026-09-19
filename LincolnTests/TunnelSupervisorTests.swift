@@ -33,10 +33,12 @@ final class TunnelSupervisorTests: XCTestCase {
     }
 
     /// Terminal-only supervisor (silent connections off), as most of the
-    /// Terminal-flow tests expect.
-    private func makeSupervisor(_ tunnel: Tunnel, silent: Bool = false) -> TunnelSupervisor {
+    /// Terminal-flow tests expect. `gui` switches to the askpass flow.
+    private func makeSupervisor(_ tunnel: Tunnel, silent: Bool = false, gui: Bool = false) -> TunnelSupervisor {
         let supervisor = TunnelSupervisor(tunnel: tunnel, launcher: launcher, headless: headless, socket: socket, environment: environment, notifier: notifier, stateDirectory: stateDirectory)
         supervisor.connectSilentlyFirst = { silent }
+        supervisor.promptMode = { gui ? .lincoln : .terminal }
+        supervisor.askpass = { gui ? (URL(fileURLWithPath: "/Applications/Lincoln.app/Contents/MacOS/lincoln-askpass"), URL(fileURLWithPath: "/tmp/askpass.sock")) : nil }
         return supervisor
     }
 
@@ -67,6 +69,88 @@ final class TunnelSupervisorTests: XCTestCase {
         await drainMainQueue()
         XCTAssertFalse(launcher.last!.script.contains("-D 1080"), "the config's DynamicForward 1080 stays active; adding it again would fail to bind")
         XCTAssertFalse(supervisor.lastCommandLine.contains("ClearAllForwardings"))
+    }
+
+    // MARK: - Prompts in Lincoln (askpass)
+
+    func testGuiLaunchSetsAskpassEnvironmentAndAllowsKeyboardInteractive() async {
+        supervisor = makeSupervisor(tunnel, gui: true)
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(headless.launches.count, 1)
+        XCTAssertTrue(launcher.launches.isEmpty)
+        let env = headless.environments[0]
+        XCTAssertEqual(env["SSH_ASKPASS"], "/Applications/Lincoln.app/Contents/MacOS/lincoln-askpass")
+        XCTAssertEqual(env["SSH_ASKPASS_REQUIRE"], "force")
+        XCTAssertEqual(env["LINCOLN_ASKPASS_SOCKET"], "/tmp/askpass.sock")
+        XCTAssertEqual(env["LINCOLN_ASKPASS_TUNNEL"], tunnel.id.uuidString)
+        let args = headless.launches[0]
+        XCTAssertFalse(args.contains("BatchMode=yes"))
+        XCTAssertFalse(args.contains("KbdInteractiveAuthentication=no"), "Duo needs keyboard-interactive")
+        XCTAssertEqual(supervisor.lastLaunchMode, .gui)
+        await supervisor.poll()
+        XCTAssertTrue(supervisor.state.isConnected)
+    }
+
+    func testGuiPromptIsAnsweredAndOutputIsCaptured() async {
+        supervisor = makeSupervisor(tunnel, gui: true)
+        headless.outputToEmit = ["Duo two-factor login for alice\n", " 1. Duo Push to XXX-XXX-1234\n 2. Phone call\n"]
+        var relayedReply: AskpassReply?
+        headless.whileRunning = { [self] in
+            let prompt = PendingPrompt(request: AskpassRequest(prompt: "Passcode or option (1-2): ", hint: nil, tunnelID: tunnel.id.uuidString)) { relayedReply = $0 }
+            supervisor.receive(prompt: prompt)
+            XCTAssertTrue(supervisor.recentOutput.contains("Duo Push"))
+            XCTAssertNotNil(supervisor.pendingPrompt)
+            supervisor.answerPrompt("1")
+            XCTAssertNil(supervisor.pendingPrompt)
+        }
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(relayedReply, AskpassReply(answer: "1", cancelled: false))
+        XCTAssertTrue(supervisor.state.isConnecting)
+        await supervisor.poll()
+        XCTAssertTrue(supervisor.state.isConnected)
+    }
+
+    func testCancellingGuiPromptStopsAndReportsCancelled() async {
+        supervisor = makeSupervisor(tunnel, gui: true)
+        headless.result = SSHCommandResult(standardOutput: "", standardError: "Permission denied (keyboard-interactive).\n", exitCode: 255)
+        var relayedReply: AskpassReply?
+        headless.whileRunning = { [self] in
+            let prompt = PendingPrompt(request: AskpassRequest(prompt: "Passcode or option (1-2): ", hint: nil, tunnelID: tunnel.id.uuidString)) { relayedReply = $0 }
+            supervisor.receive(prompt: prompt)
+            supervisor.cancelPrompt()
+        }
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(relayedReply, AskpassReply(answer: nil, cancelled: true))
+        XCTAssertTrue(launcher.launches.isEmpty, "no Terminal fallback in Lincoln mode")
+        XCTAssertNotEqual(supervisor.state, .failed(reason: "Permission denied (keyboard-interactive)."))
+    }
+
+    func testGuiFailureReportsSSHMessage() async {
+        supervisor = makeSupervisor(tunnel, gui: true)
+        headless.result = MockHeadlessLauncher.refused
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(supervisor.state, .failed(reason: "ssh: connect to host tg port 22: Connection refused"))
+        XCTAssertTrue(launcher.launches.isEmpty)
+    }
+
+    func testPromptForIdleTunnelIsCancelled() {
+        var reply: AskpassReply?
+        let prompt = PendingPrompt(request: AskpassRequest(prompt: "x", hint: nil, tunnelID: tunnel.id.uuidString)) { reply = $0 }
+        supervisor.receive(prompt: prompt)
+        XCTAssertEqual(reply?.cancelled, true)
+    }
+
+    func testGuiModeWithoutHelperFallsBackToTerminalFlow() async {
+        supervisor = makeSupervisor(tunnel, silent: false, gui: false)
+        supervisor.promptMode = { .lincoln }
+        supervisor.askpass = { nil }
+        supervisor.start()
+        await drainMainQueue()
+        XCTAssertEqual(launcher.launches.count, 1)
     }
 
     // MARK: - Silent-first launches

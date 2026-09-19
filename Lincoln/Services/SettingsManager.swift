@@ -35,6 +35,7 @@ final class SettingsManager: ObservableObject {
         static let hideDockIcon = "lincoln.hideDockIcon"
         static let notificationsEnabled = "lincoln.notificationsEnabled"
         static let connectSilentlyFirst = "lincoln.connectSilentlyFirst"
+        static let promptMode = "lincoln.promptMode"
         static let sshExecutable = "lincoln.sshExecutable"
         static let extraPath = "lincoln.extraPath"
         static let serverAliveInterval = "lincoln.serverAliveInterval"
@@ -42,7 +43,7 @@ final class SettingsManager: ObservableObject {
         static let hasCompletedFirstRun = "lincoln.hasCompletedFirstRun"
 
         static var all: [String] {
-            [showMenuBarItem, hideDockIcon, notificationsEnabled, connectSilentlyFirst, sshExecutable,
+            [showMenuBarItem, hideDockIcon, notificationsEnabled, connectSilentlyFirst, promptMode, sshExecutable,
              extraPath, serverAliveInterval, serverAliveCountMax, hasCompletedFirstRun]
         }
     }
@@ -80,8 +81,29 @@ final class SettingsManager: ObservableObject {
         didSet { defaults.set(notificationsEnabled, forKey: Key.notificationsEnabled) }
     }
 
-    /// Try the master with keys only and no window; open Terminal.app only
-    /// when ssh needs a person (Duo, passphrase, host key).
+    /// Where ssh's prompts (Duo, passphrase, host key) are answered.
+    enum PromptMode: String, CaseIterable, Identifiable {
+        /// ssh runs headless; prompts are relayed to a Lincoln panel via SSH_ASKPASS.
+        case lincoln
+        /// The original flow: try silently, then open Terminal.app for prompts.
+        case terminal
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .lincoln: return "Ask in Lincoln"
+            case .terminal: return "Open Terminal.app"
+            }
+        }
+    }
+
+    @Published var promptMode: PromptMode {
+        didSet { defaults.set(promptMode.rawValue, forKey: Key.promptMode) }
+    }
+
+    /// Terminal mode only: try the master with keys and no window first, and
+    /// open Terminal.app only when ssh needs a person.
     @Published var connectSilentlyFirst: Bool {
         didSet { defaults.set(connectSilentlyFirst, forKey: Key.connectSilentlyFirst) }
     }
@@ -126,6 +148,7 @@ final class SettingsManager: ObservableObject {
         hideDockIcon = defaults.bool(forKey: Key.hideDockIcon)
         notificationsEnabled = defaults.object(forKey: Key.notificationsEnabled) as? Bool ?? true
         connectSilentlyFirst = defaults.object(forKey: Key.connectSilentlyFirst) as? Bool ?? true
+        promptMode = defaults.string(forKey: Key.promptMode).flatMap(PromptMode.init(rawValue:)) ?? .lincoln
         sshExecutable = defaults.string(forKey: Key.sshExecutable) ?? SettingsManager.defaultSSHExecutable
         extraPath = defaults.string(forKey: Key.extraPath) ?? SettingsManager.defaultExtraPath
         serverAliveInterval = defaults.object(forKey: Key.serverAliveInterval) as? Int ?? 30

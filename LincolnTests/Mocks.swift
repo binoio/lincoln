@@ -36,16 +36,25 @@ final class MockTerminalLauncher: TerminalLaunching {
 @MainActor
 final class MockHeadlessLauncher: HeadlessMasterLaunching {
     private(set) var launches: [[String]] = []
+    private(set) var environments: [[String: String]] = []
     private(set) var timeouts: [TimeInterval] = []
     /// Result returned to the supervisor; default is a silent success.
     var result = SSHCommandResult(standardOutput: "", standardError: "", exitCode: 0)
+    /// Output chunks emitted (via onOutput) before returning.
+    var outputToEmit: [String] = []
+    /// Runs while ssh is "in progress" — e.g. to relay a prompt — before the result is returned.
+    var whileRunning: (() async -> Void)?
     /// Simulate the master appearing on this socket path when the launch succeeds.
     var socket: MockControlSocket?
     var socketPath: String?
 
-    func launchMaster(arguments: [String], timeout: TimeInterval) async -> SSHCommandResult {
+    func launchMaster(arguments: [String], environmentOverrides: [String: String], timeout: TimeInterval, onOutput: (@Sendable (String) -> Void)?) async -> SSHCommandResult {
         launches.append(arguments)
+        environments.append(environmentOverrides)
         timeouts.append(timeout)
+        for chunk in outputToEmit { onOutput?(chunk) }
+        await Task.yield()
+        if let whileRunning = whileRunning { await whileRunning() }
         if result.exitCode == 0, let socket = socket, let path = socketPath {
             socket.running[path] = 9001
         }

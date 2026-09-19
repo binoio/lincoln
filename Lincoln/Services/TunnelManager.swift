@@ -39,6 +39,10 @@ final class TunnelManager: ObservableObject {
     private var pollTimer: Timer?
     private let socketWatcher = SocketDirectoryWatcher()
     private var isPollingEnabled = false
+    private let askpassServer: AskpassServer?
+    /// The prompt currently shown to the user (one at a time; others wait).
+    @Published private(set) var activePrompt: PendingPrompt?
+    private var promptQueue: [PendingPrompt] = []
 
     /// Seconds between `ssh -O check` rounds while a tunnel is up; faster
     /// while something connects or disconnects. With no active tunnel the
@@ -55,7 +59,8 @@ final class TunnelManager: ObservableObject {
         socket: ControlSocketChecking,
         notifier: Notifying? = nil,
         configParser: SSHConfigParser = SSHConfigParser(),
-        stateDirectory: URL? = nil
+        stateDirectory: URL? = nil,
+        askpassServer: AskpassServer? = nil
     ) {
         self.store = store
         self.settings = settings
@@ -66,6 +71,69 @@ final class TunnelManager: ObservableObject {
         self.notifier = notifier
         self.configParser = configParser
         self.stateDirectory = stateDirectory ?? store.directoryURL.appendingPathComponent("state", isDirectory: true)
+        self.askpassServer = askpassServer
+        askpassServer?.onPrompt = { [weak self] prompt in self?.route(prompt: prompt) }
+    }
+
+    /// Starts the askpass listener. Without it (or without the bundled
+    /// helper) prompts fall back to Terminal.app.
+    func startAskpass() {
+        guard let server = askpassServer else { return }
+        do {
+            try server.start()
+        } catch {
+            LogStore.log(level: .error, category: "Askpass", message: "Could not listen for ssh prompts; using Terminal.app instead", details: error.localizedDescription)
+        }
+    }
+
+    var askpassEndpoints: (helper: URL, socket: URL)? {
+        guard let server = askpassServer, server.isListening, let helper = AskpassServer.helperURL else { return nil }
+        return (helper, server.socketURL)
+    }
+
+    // MARK: - Prompts
+
+    #if DEBUG
+    func testRoute(_ prompt: PendingPrompt) { route(prompt: prompt) }
+    #endif
+
+    private func route(prompt: PendingPrompt) {
+        guard let supervisor = supervisor(for: prompt.tunnelID) else {
+            LogStore.log(level: .warning, category: "Askpass", message: "Prompt for unknown tunnel cancelled", details: prompt.request.prompt)
+            prompt.cancel()
+            return
+        }
+        supervisor.receive(prompt: prompt)
+        guard !prompt.isAnswered else { return }
+        promptQueue.append(prompt)
+        showNextPrompt()
+        notifier?.post(identifier: "prompt-\(supervisor.id.uuidString)", title: "\(supervisor.tunnel.displayName) needs your answer", body: prompt.request.prompt)
+    }
+
+    private func showNextPrompt() {
+        promptQueue.removeAll { $0.isAnswered }
+        if let current = activePrompt, !current.isAnswered { return }
+        activePrompt = promptQueue.first
+    }
+
+    func answerActivePrompt(_ text: String) {
+        guard let prompt = activePrompt else { return }
+        notifier?.clear(identifier: "prompt-\(prompt.tunnelID?.uuidString ?? "")")
+        supervisor(for: prompt.tunnelID)?.answerPrompt(text)
+        prompt.answer(text)
+        activePrompt = nil
+        showNextPrompt()
+    }
+
+    func cancelActivePrompt() {
+        guard let prompt = activePrompt else { return }
+        notifier?.clear(identifier: "prompt-\(prompt.tunnelID?.uuidString ?? "")")
+        if let supervisor = supervisor(for: prompt.tunnelID) {
+            supervisor.cancelPrompt()
+        }
+        prompt.cancel()
+        activePrompt = nil
+        showNextPrompt()
     }
 
     // MARK: - Lifecycle
@@ -196,6 +264,8 @@ final class TunnelManager: ObservableObject {
             stateDirectory: stateDirectory
         )
         supervisor.connectSilentlyFirst = { [weak self] in self?.settings.connectSilentlyFirst ?? true }
+        supervisor.promptMode = { [weak self] in self?.settings.promptMode ?? .terminal }
+        supervisor.askpass = { [weak self] in self?.askpassEndpoints }
         supervisor.onStateChange = { [weak self] _ in
             self?.stateVersion += 1
         }
@@ -344,6 +414,7 @@ final class TunnelManager: ObservableObject {
     /// sessions); `desiredUp` is kept so the next launch knows what to expect.
     func prepareForQuit() {
         stopPolling()
+        askpassServer?.stop()
     }
 
     /// Network change, wake, socket directory change or app activation:

@@ -53,7 +53,17 @@ struct SSHCommandResult: Equatable {
 /// Starts a control master from Lincoln itself, with no terminal.
 @MainActor
 protocol HeadlessMasterLaunching {
-    func launchMaster(arguments: [String], timeout: TimeInterval) async -> SSHCommandResult
+    /// - Parameters:
+    ///   - environmentOverrides: extra variables (SSH_ASKPASS and friends).
+    ///   - onOutput: receives stdout/stderr chunks as they arrive, so the
+    ///     app can show ssh's banner or the Duo menu next to a prompt.
+    func launchMaster(arguments: [String], environmentOverrides: [String: String], timeout: TimeInterval, onOutput: (@Sendable (String) -> Void)?) async -> SSHCommandResult
+}
+
+extension HeadlessMasterLaunching {
+    func launchMaster(arguments: [String], timeout: TimeInterval) async -> SSHCommandResult {
+        await launchMaster(arguments: arguments, environmentOverrides: [:], timeout: timeout, onOutput: nil)
+    }
 }
 
 @MainActor
@@ -169,22 +179,22 @@ final class SSHEnvironment: SSHEnvironmentProviding, HeadlessMasterLaunching {
         await run(arguments: ["-V"])
     }
 
-    func run(arguments: [String], timeout: TimeInterval? = nil) async -> SSHCommandResult {
+    func run(arguments: [String], timeout: TimeInterval? = nil, environmentOverrides: [String: String] = [:], onOutput: (@Sendable (String) -> Void)? = nil) async -> SSHCommandResult {
         let executable = settings.sshExecutable
-        let environment = processEnvironment()
+        let environment = processEnvironment().merging(environmentOverrides) { _, override in override }
         return await Task.detached(priority: .userInitiated) {
-            SSHEnvironment.runSynchronously(executable: executable, arguments: arguments, environment: environment, timeout: timeout)
+            SSHEnvironment.runSynchronously(executable: executable, arguments: arguments, environment: environment, timeout: timeout, onOutput: onOutput)
         }.value
     }
 
     /// `ssh -M -N -f …` run by Lincoln. ssh forks the master away and the
     /// parent exits once the forwards are up, so this returns promptly; the
     /// watchdog covers a hang (e.g. a ProxyCommand that never answers).
-    func launchMaster(arguments: [String], timeout: TimeInterval) async -> SSHCommandResult {
-        await run(arguments: arguments, timeout: timeout)
+    func launchMaster(arguments: [String], environmentOverrides: [String: String], timeout: TimeInterval, onOutput: (@Sendable (String) -> Void)?) async -> SSHCommandResult {
+        await run(arguments: arguments, timeout: timeout, environmentOverrides: environmentOverrides, onOutput: onOutput)
     }
 
-    nonisolated static func runSynchronously(executable: String, arguments: [String], environment: [String: String], timeout: TimeInterval? = nil) -> SSHCommandResult {
+    nonisolated static func runSynchronously(executable: String, arguments: [String], environment: [String: String], timeout: TimeInterval? = nil, onOutput: (@Sendable (String) -> Void)? = nil) -> SSHCommandResult {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: executable)
         task.arguments = arguments
@@ -205,15 +215,26 @@ final class SSHEnvironment: SSHEnvironmentProviding, HeadlessMasterLaunching {
             watchdog = item
             DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: item)
         }
-        // Read both pipes concurrently so a chatty stderr cannot deadlock us.
+        // Read both pipes concurrently so a chatty stderr cannot deadlock us,
+        // forwarding chunks live when asked.
+        func drain(_ handle: FileHandle) -> Data {
+            var collected = Data()
+            while true {
+                let chunk = handle.availableData
+                if chunk.isEmpty { break }
+                collected.append(chunk)
+                onOutput?(String(decoding: chunk, as: UTF8.self))
+            }
+            return collected
+        }
         var outData = Data()
         let group = DispatchGroup()
         group.enter()
         DispatchQueue.global().async {
-            outData = stdout.fileHandleForReading.readDataToEndOfFile()
+            outData = drain(stdout.fileHandleForReading)
             group.leave()
         }
-        let errData = stderr.fileHandleForReading.readDataToEndOfFile()
+        let errData = drain(stderr.fileHandleForReading)
         group.wait()
         task.waitUntilExit()
         let timedOut = watchdog.map { $0.isCancelled == false && task.terminationReason == .uncaughtSignal } ?? false

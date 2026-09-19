@@ -76,6 +76,7 @@ struct LincolnApp: App {
     private let sshEnvironment: SSHEnvironment
     private let networkMonitor = NetworkMonitor()
     private let powerMonitor = PowerMonitor()
+    private let promptWindow: PromptWindowController
 
     init() {
         let settings = SettingsManager()
@@ -88,13 +89,16 @@ struct LincolnApp: App {
             launcher: TerminalAppLauncher(),
             headless: environment,
             socket: ControlSocketClient(environment: environment),
-            notifier: notifier
+            notifier: notifier,
+            askpassServer: AskpassServer()
         )
         _settings = StateObject(wrappedValue: settings)
         _manager = StateObject(wrappedValue: manager)
         sshEnvironment = environment
+        promptWindow = PromptWindowController(manager: manager)
 
         if !LincolnAppDelegate.isRunningTests {
+            manager.startAskpass()
             manager.load()
             Task { @MainActor in
                 await manager.restore()

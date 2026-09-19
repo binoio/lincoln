@@ -83,9 +83,7 @@ struct TunnelDetailView: View {
                         .lineLimit(1)
                         .help(error)
                 } else if supervisor.state.isConnecting {
-                    Text(supervisor.lastLaunchMode == .silent
-                         ? "Starting the control master with your keys…"
-                         : "Answer the prompt in the Terminal window; the tunnel appears here once the control socket is up.")
+                    Text(connectingHint)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -103,6 +101,15 @@ struct TunnelDetailView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
         .background(Color(NSColor.windowBackgroundColor))
+    }
+
+    private var connectingHint: String {
+        switch supervisor.lastLaunchMode {
+        case .silent: return "Starting the control master with your keys…"
+        case .gui: return supervisor.pendingPrompt == nil ? "Starting the control master; Lincoln will ask if ssh needs anything…" : "Waiting for your answer in the Lincoln prompt."
+        case .terminal: return "Answer the prompt in the Terminal window; the tunnel appears here once the control socket is up."
+        case nil: return "Connecting…"
+        }
     }
 
     private func save() {

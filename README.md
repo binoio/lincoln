@@ -7,7 +7,7 @@ A macOS GUI Dock and Menu Bar app for establishing, maintaining, disconnecting a
 ## Features
 
 - **Tunnels as first-class objects**: Each tunnel is a host (an alias from `~/.ssh/config`, or a hostname) plus the SOCKS/local/remote forwards you want. Connect, disconnect, reconfigure and reorder them from the main window or the menu bar.
-- **Silent when keys suffice, Terminal.app when a person is needed**: Connect starts `ssh -M -N -f …` from Lincoln with key authentication only. If ssh needs more — a Duo prompt, a key passphrase, an unknown host key — Lincoln opens a Terminal window for exactly that, with your login shell, keys and agent; after authentication ssh backgrounds itself as a **ControlMaster** and the window can be closed.
+- **Prompts answered in Lincoln**: Connect starts `ssh -M -N -f …` from Lincoln with no terminal. Keys in your agent or keychain mean no prompt at all; when ssh needs a person — a Duo passcode or push option, a key passphrase, an unknown host key — ssh hands the prompt to the bundled `lincoln-askpass` helper (`SSH_ASKPASS`), which relays it to a Lincoln panel over a local socket. Your answer goes straight back to ssh and is never stored. Prefer a terminal? Settings can route prompts to Terminal.app instead. Either way ssh backgrounds itself as a **ControlMaster** once authenticated.
 - **Shared with your terminal by default**: Lincoln uses the `ControlPath` your ssh config already defines (via `ssh -G`), so a terminal `ssh della` through `ProxyJump tg` reuses the tunnel and skips a second Duo prompt. Tunnels you start by hand show up in Lincoln too.
 - **Watched, not babysat**: Lincoln polls the control sockets (`ssh -O check`) and reacts to network changes and wake from sleep. A dropped tunnel is shown and notified — never reconnected behind your back, since every connection may cost a Duo push.
 - **Keys only**: Password authentication is disabled on every tunnel Lincoln starts.
@@ -20,15 +20,16 @@ A macOS GUI Dock and Menu Bar app for establishing, maintaining, disconnecting a
 ## How a tunnel runs
 
 ```
-Lincoln ──runs──▶ ssh -M -N -f -o BatchMode=yes -o PreferredAuthentications=publickey -o ControlPath=<from ssh -G> -D 1080 … tg
-                   │ keys in agent/keychain → master up, no window
-                   │ "Permission denied (keyboard-interactive)" / passphrase / host key →
+Lincoln ──runs──▶ ssh -M -N -f -o ControlPath=<from ssh -G> -D 1080 … tg     (SSH_ASKPASS=lincoln-askpass, SSH_ASKPASS_REQUIRE=force)
+                   │ keys in agent/keychain → master up, nothing asked
+                   │ Duo / passphrase / host key → ssh runs lincoln-askpass
+                   ▼                                      │
+             Lincoln prompt panel ◀── local socket ◀──────┘   answer ──▶ ssh
                    ▼
-        ──opens──▶ Terminal.app ──runs──▶ ssh -M -N -f -o ControlPath=<same> -D 1080 … tg
-                                                │  (Duo / passphrase answered here)
-                                                ▼
-                                   control socket  ◀── ssh -O check / -O exit (Lincoln)
-                                                   ◀── ssh della  (your terminal, via ProxyJump tg)
+        control socket  ◀── ssh -O check / -O exit (Lincoln)
+                        ◀── ssh della  (your terminal, via ProxyJump tg)
+
+Settings › Open Terminal.app: the same master started in a Terminal window instead.
 ```
 
 ## Requirements

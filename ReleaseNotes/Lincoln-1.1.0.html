@@ -1,0 +1,7 @@
+<h2>Lincoln 1.1.0</h2>
+<p>Lincoln 1.1.0 answers ssh's prompts in the app. No Terminal window is needed to connect.</p>
+<ul>
+  <li><strong>Prompts in Lincoln</strong>: The control master is started by Lincoln with <code>SSH_ASKPASS</code> pointing at a bundled <code>lincoln-askpass</code> helper. When ssh needs you &mdash; a Duo passcode or push option, a key passphrase, an unknown host key &mdash; a Lincoln panel shows the prompt together with ssh's recent output and passes your answer straight back to ssh. Keys in your agent or keychain mean nothing is asked at all. Answers are never stored.</li>
+  <li><strong>Settings &#9656; Connecting</strong>: choose <em>Ask in Lincoln</em> (default) or <em>Open Terminal.app</em>, which keeps the previous flow.</li>
+  <li><strong>Get Info</strong> shows how a tunnel was launched.</li>
+</ul>

@@ -213,6 +213,49 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertTrue(manager.supervisors.isEmpty)
     }
 
+    func testPromptRoutingQueueAndCancel() async {
+        let manager = makeManager()
+        manager.load()
+        let a = manager.add(TestFixtures.tunnel(name: "A"))
+        // Any headless launch keeps the tunnel in `connecting` while ssh runs;
+        // that is when relayed prompts are accepted.
+        settings.connectSilentlyFirst = true
+        // Not connecting → prompt is refused outright.
+        var replyIdle: AskpassReply?
+        manager.testRoute(PendingPrompt(request: AskpassRequest(prompt: "x", hint: nil, tunnelID: a.id.uuidString)) { replyIdle = $0 })
+        XCTAssertEqual(replyIdle?.cancelled, true)
+        XCTAssertNil(manager.activePrompt)
+
+        // Connecting → prompt becomes active, answer flows back. ssh sends one
+        // prompt at a time per tunnel, so a newer prompt supersedes an unanswered one.
+        headless.result = SSHCommandResult(standardOutput: "", standardError: "", exitCode: 255)
+        var reply1: AskpassReply?
+        var reply2: AskpassReply?
+        headless.whileRunning = { [self] in
+            manager.testRoute(PendingPrompt(request: AskpassRequest(prompt: "first", hint: nil, tunnelID: a.id.uuidString)) { reply1 = $0 })
+            XCTAssertEqual(manager.activePrompt?.request.prompt, "first")
+            XCTAssertNil(reply1)
+            manager.testRoute(PendingPrompt(request: AskpassRequest(prompt: "second", hint: nil, tunnelID: a.id.uuidString)) { reply2 = $0 })
+            XCTAssertEqual(reply1?.cancelled, true, "superseded")
+            XCTAssertEqual(manager.activePrompt?.request.prompt, "second")
+            manager.answerActivePrompt("1")
+            XCTAssertEqual(reply2, AskpassReply(answer: "1", cancelled: false))
+            XCTAssertNil(manager.activePrompt)
+            var reply3: AskpassReply?
+            manager.testRoute(PendingPrompt(request: AskpassRequest(prompt: "third", hint: nil, tunnelID: a.id.uuidString)) { reply3 = $0 })
+            manager.cancelActivePrompt()
+            XCTAssertEqual(reply3?.cancelled, true)
+            XCTAssertNil(manager.activePrompt)
+        }
+        manager.connect(id: a.id)
+        await drainMainQueue()
+        XCTAssertEqual(notifier.posted.filter { $0.title == "A needs your answer" }.count, 3)
+        // Unknown tunnel ids are cancelled.
+        var replyUnknown: AskpassReply?
+        manager.testRoute(PendingPrompt(request: AskpassRequest(prompt: "x", hint: nil, tunnelID: UUID().uuidString)) { replyUnknown = $0 })
+        XCTAssertEqual(replyUnknown?.cancelled, true)
+    }
+
     func testClipboardHelpers() async {
         let manager = makeManager()
         manager.load()

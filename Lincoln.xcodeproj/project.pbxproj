@@ -33,6 +33,11 @@
 		B25 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25; };
 		B27 /* TunnelInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F27; };
 		B28 /* SocketDirectoryWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28; };
+		B33 /* AskpassServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33; };
+		B34 /* PromptWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34; };
+		B35 /* PromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35; };
+		BH01 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = FH01; };
+		BH02 /* lincoln-askpass in CopyFiles */ = {isa = PBXBuildFile; fileRef = PH01 /* lincoln-askpass */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		B90 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F30; };
 		B91 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = P01 /* Sparkle */; };
 		B92 /* LincolnCore in Frameworks */ = {isa = PBXBuildFile; productRef = P03 /* LincolnCore */; };
@@ -48,6 +53,7 @@
 		BT09 /* TunnelEditorViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT09; };
 		BT10 /* ControlSocketClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT10; };
 		BT11 /* RealSSHIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT11; };
+		BT12 /* AskpassServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FT12; };
 
 		BU01 /* LincolnUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FU01; };
 /* End PBXBuildFile section */
@@ -66,6 +72,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = T01;
 			remoteInfo = Lincoln;
+		};
+		C03 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 900 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = T04;
+			remoteInfo = "lincoln-askpass";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -96,6 +109,11 @@
 		F25 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
 		F27 /* TunnelInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelInfoView.swift; sourceTree = "<group>"; };
 		F28 /* SocketDirectoryWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketDirectoryWatcher.swift; sourceTree = "<group>"; };
+		F33 /* AskpassServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskpassServer.swift; sourceTree = "<group>"; };
+		F34 /* PromptWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptWindowController.swift; sourceTree = "<group>"; };
+		F35 /* PromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptView.swift; sourceTree = "<group>"; };
+		FH01 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		PH01 /* lincoln-askpass */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "lincoln-askpass"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F30 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F32 /* Lincoln.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Lincoln.entitlements; sourceTree = "<group>"; };
@@ -112,6 +130,7 @@
 		FT09 /* TunnelEditorViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelEditorViewModelTests.swift; sourceTree = "<group>"; };
 		FT10 /* ControlSocketClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlSocketClientTests.swift; sourceTree = "<group>"; };
 		FT11 /* RealSSHIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealSSHIntegrationTests.swift; sourceTree = "<group>"; };
+		FT12 /* AskpassServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskpassServerTests.swift; sourceTree = "<group>"; };
 		PT01 /* LincolnTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LincolnTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 
 		FU01 /* LincolnUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LincolnUITests.swift; sourceTree = "<group>"; };
@@ -142,6 +161,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		504 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -152,8 +178,17 @@
 				602 /* LincolnTests */,
 				603 /* LincolnUITests */,
 				605 /* LincolnCore */,
+				606 /* LincolnAskpass */,
 				604 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		606 /* LincolnAskpass */ = {
+			isa = PBXGroup;
+			children = (
+				FH01 /* main.swift */,
+			);
+			path = LincolnAskpass;
 			sourceTree = "<group>";
 		};
 		601 /* Lincoln */ = {
@@ -193,6 +228,8 @@
 				F11 /* SettingsManager.swift */,
 				F12 /* ControlSocketClient.swift */,
 				F28 /* SocketDirectoryWatcher.swift */,
+				F33 /* AskpassServer.swift */,
+				F34 /* PromptWindowController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -220,6 +257,7 @@
 				F24 /* SettingsView.swift */,
 				F25 /* LogsView.swift */,
 				F27 /* TunnelInfoView.swift */,
+				F35 /* PromptView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -238,6 +276,7 @@
 				FT09 /* TunnelEditorViewModelTests.swift */,
 				FT10 /* ControlSocketClientTests.swift */,
 				FT11 /* RealSSHIntegrationTests.swift */,
+				FT12 /* AskpassServerTests.swift */,
 			);
 			path = LincolnTests;
 			sourceTree = "<group>";
@@ -263,6 +302,7 @@
 				P02 /* Lincoln.app */,
 				PT01 /* LincolnTests.xctest */,
 				PU01 /* LincolnUITests.xctest */,
+				PH01 /* lincoln-askpass */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -277,10 +317,12 @@
 				S01 /* Sources */,
 				501 /* Frameworks */,
 				R01 /* Resources */,
+				CP01 /* Embed Helper */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				D03 /* PBXTargetDependency */,
 			);
 			name = Lincoln;
 			packageProductDependencies = (
@@ -325,6 +367,22 @@
 			productReference = PU01 /* LincolnUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		T04 /* lincoln-askpass */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = Z04 /* Build configuration list for PBXNativeTarget "lincoln-askpass" */;
+			buildPhases = (
+				S04 /* Sources */,
+				504 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "lincoln-askpass";
+			productName = "lincoln-askpass";
+			productReference = PH01 /* lincoln-askpass */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -345,6 +403,9 @@
 					T03 = {
 						CreatedOnToolsVersion = 15.0;
 						TestTargetID = T01;
+					};
+					T04 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
@@ -368,9 +429,24 @@
 				T01 /* Lincoln */,
 				T02 /* LincolnTests */,
 				T03 /* LincolnUITests */,
+				T04 /* lincoln-askpass */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CP01 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				BH02 /* lincoln-askpass in CopyFiles */,
+			);
+			name = "Embed Helper";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
 		R01 /* Resources */ = {
@@ -414,6 +490,9 @@
 				B25 /* LogsView.swift in Sources */,
 				B27 /* TunnelInfoView.swift in Sources */,
 				B28 /* SocketDirectoryWatcher.swift in Sources */,
+				B33 /* AskpassServer.swift in Sources */,
+				B34 /* PromptWindowController.swift in Sources */,
+				B35 /* PromptView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -432,6 +511,7 @@
 				BT09 /* TunnelEditorViewModelTests.swift in Sources */,
 				BT10 /* ControlSocketClientTests.swift in Sources */,
 				BT11 /* RealSSHIntegrationTests.swift in Sources */,
+				BT12 /* AskpassServerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -440,6 +520,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				BU01 /* LincolnUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BH01 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -455,6 +543,11 @@
 			isa = PBXTargetDependency;
 			target = T01 /* Lincoln */;
 			targetProxy = C02 /* PBXContainerItemProxy */;
+		};
+		D03 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = T04 /* lincoln-askpass */;
+			targetProxy = C03 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -535,7 +628,7 @@
 				CODE_SIGN_ENTITLEMENTS = Lincoln/Lincoln.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.4;
+				CURRENT_PROJECT_VERSION = 1.1.0;
 				ENABLE_DEBUG_DYLIB = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lincoln/Info.plist;
@@ -543,7 +636,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.Lincoln;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;
@@ -559,14 +652,14 @@
 				CODE_SIGN_ENTITLEMENTS = Lincoln/Lincoln.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.4;
+				CURRENT_PROJECT_VERSION = 1.1.0;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lincoln/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.4;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.Lincoln;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;
@@ -624,6 +717,28 @@
 			};
 			name = Release;
 		};
+		C_DEBUG_TOOL = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_HARDENED_RUNTIME = YES;
+				PRODUCT_NAME = "lincoln-askpass";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C_RELEASE_TOOL = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_HARDENED_RUNTIME = YES;
+				PRODUCT_NAME = "lincoln-askpass";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -659,6 +774,15 @@
 			buildConfigurations = (
 				C_DEBUG_UITEST /* Debug */,
 				C_RELEASE_UITEST /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		Z04 /* Build configuration list for PBXNativeTarget "lincoln-askpass" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C_DEBUG_TOOL /* Debug */,
+				C_RELEASE_TOOL /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

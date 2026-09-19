@@ -95,6 +95,7 @@ PUBLIC_KEY="$(/usr/libexec/PlistBuddy -c 'Print SUPublicEDKey' "$PLIST")"
 KEYCHAIN_KEY="$("$SPARKLE_BIN/generate_keys" -p)"
 [[ "$PUBLIC_KEY" == "$KEYCHAIN_KEY" ]] || { echo "error: SUPublicEDKey ($PUBLIC_KEY) does not match the EdDSA key in the login Keychain ($KEYCHAIN_KEY)" >&2; exit 1; }
 [[ -d "$FRAMEWORK" ]] || { echo "error: Sparkle.framework not embedded" >&2; exit 1; }
+[[ -x "$APP/Contents/MacOS/lincoln-askpass" ]] || { echo "error: lincoln-askpass helper not embedded" >&2; exit 1; }
 LOAD_COMMANDS=$(otool -l "$APP/Contents/MacOS/Lincoln")
 [[ "$LOAD_COMMANDS" == *"@executable_path/../Frameworks"* ]] || { echo "error: Frameworks rpath missing" >&2; exit 1; }
 
