@@ -42,11 +42,18 @@ WORK="$(mktemp -d)"
 FAKE_HOME="$WORK/home"
 mkdir -p "$FAKE_HOME"
 APP_PID=""
+# The instrumented build drops a default.profraw in the cwd; only clear away
+# one this run created.
+HAD_PROFRAW=0
+[[ -e default.profraw ]] && HAD_PROFRAW=1
 
 cleanup() {
     if [[ -n "$APP_PID" && "$KEEP_OPEN" -eq 0 ]]; then
         kill "$APP_PID" 2>/dev/null || true
         wait "$APP_PID" 2>/dev/null || true
+    fi
+    if [[ "$HAD_PROFRAW" -eq 0 && ! -s default.profraw ]]; then
+        rm -f default.profraw
     fi
     rm -rf "$WORK"
 }
@@ -130,7 +137,9 @@ if [[ -z "$WINDOW_ID" ]]; then
     exit 1
 fi
 
-# Let the window finish its open animation before capturing.
+# Re-activate right before the shot: anything that steals focus between launch
+# and capture would otherwise leave the window greyed out in the screenshot.
+open -a "$APP_PATH"
 sleep 1.5
 
 # ------------------------------------------------------------------- capture
