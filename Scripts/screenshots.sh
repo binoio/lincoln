@@ -2,8 +2,10 @@
 #
 # screenshots.sh: capture Lincoln window screenshots into docs/images/.
 #
-# The app runs against a throwaway HOME so captures are reproducible and never
-# contain personal data (hosts, proxies, recent files). Screenshots are taken
+# The app runs with HOME pointed at a throwaway directory, which keeps
+# file-backed state out of the shot. Note this does NOT isolate NSUserDefaults:
+# cfprefsd resolves the real user's preference domain regardless of HOME, so
+# check any capture for personal data before publishing it. Screenshots come
 # from the shipping build by default, so the page shows what users install.
 #
 # Usage:
@@ -19,6 +21,9 @@ set -euo pipefail
 
 APP_NAME="Lincoln"
 REPO="binoio/lincoln"
+# Some apps refuse to run normally outside /Applications or ~/Applications and
+# put up a modal "Move to Applications?" alert that would land in the shot.
+NEEDS_APPROVED_LOCATION=0
 OUT_DIR="docs/images"
 MAIN_SHOT="main-window.png"
 # Retina captures are 2x; halve them so the page ships sensible bytes.
@@ -55,15 +60,18 @@ cleanup() {
     if [[ "$HAD_PROFRAW" -eq 0 && ! -s default.profraw ]]; then
         rm -f default.profraw
     fi
+    [[ -n "${STAGED_PATH:-}" ]] && rm -rf "$STAGED_PATH"
     rm -rf "$WORK"
 }
 trap cleanup EXIT
 
 # ---------------------------------------------------------------- resolve app
 if [[ "$USE_LOCAL" -eq 1 ]]; then
-    APP_PATH="$(find build/DerivedData -maxdepth 6 -name "$APP_NAME.app" -type d 2>/dev/null | head -1)"
+    # build/DerivedData for the Xcode projects, dist/ for the SwiftPM bundles.
+    # `|| true`: either search root may be absent, and pipefail would abort.
+    APP_PATH="$({ find build/DerivedData dist -maxdepth 6 -name "$APP_NAME.app" -type d 2>/dev/null || true; } | head -1)"
     if [[ -z "$APP_PATH" ]]; then
-        echo "==> No local build found. Run Scripts/build.sh first." >&2
+        echo "==> No local build found. Build the app first (see Scripts/)." >&2
         exit 1
     fi
     # `open -a` reads a relative path as an app *name*, so make it absolute.
@@ -80,6 +88,22 @@ else
     fi
     # The shipping build must be the notarized one users actually get.
     spctl -a -t exec "$APP_PATH" || { echo "==> Gatekeeper rejected the app" >&2; exit 1; }
+fi
+
+STAGED_PATH=""
+if [[ "$NEEDS_APPROVED_LOCATION" -eq 1 ]]; then
+    STAGE_DIR="$HOME/Applications"
+    STAGED_PATH="$STAGE_DIR/$APP_NAME.app"
+    if [[ -e "$STAGED_PATH" ]]; then
+        echo "==> $STAGED_PATH already exists; leaving it in place and using it"
+        STAGED_PATH=""            # pre-existing: never clean it up
+        APP_PATH="$STAGE_DIR/$APP_NAME.app"
+    else
+        echo "==> Staging into $STAGE_DIR (removed again on exit)"
+        mkdir -p "$STAGE_DIR"
+        ditto "$APP_PATH" "$STAGED_PATH"
+        APP_PATH="$STAGED_PATH"
+    fi
 fi
 
 # ------------------------------------------------------------- window helper
