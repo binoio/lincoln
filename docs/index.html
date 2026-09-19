@@ -178,6 +178,10 @@
             margin-top: 60px;
         }
 
+        footer p {
+            margin: 6px 0;
+        }
+
         footer a {
             color: var(--accent);
             text-decoration: none;
@@ -203,20 +207,12 @@
 
         <section class="features">
             <div class="feature-card">
-                <h3>Tunnels, Not Terminals</h3>
-                <p>Define a tunnel once — host alias, SOCKS proxy, local and remote forwards — then connect and disconnect it with one click from the menu bar.</p>
+                <h3>Just Tunnels</h3>
+                <p>Define a tunnel once, then connect and disconnect it with one click from the menu bar.</p>
             </div>
             <div class="feature-card">
-                <h3>Silent When Keys Suffice</h3>
-                <p>Lincoln starts the ControlMaster itself with your keys. Only when ssh needs you — Duo, a passphrase, a new host key — does a Terminal.app window open, with your own shell and agent.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Shared With Your Terminal</h3>
-                <p>Tunnels use the ControlPath from your ssh config, so <code>ssh della</code> through the gateway reuses them — no second Duo prompt. Tunnels started by hand show up too.</p>
-            </div>
-            <div class="feature-card">
-                <h3>Watched, Not Babysat</h3>
-                <p>Control sockets are checked continuously and after network changes or wake. A dropped tunnel is flagged and notified, never reconnected behind your back.</p>
+                <h3>Shared with Terminal</h3>
+                <p>Tunnels use the Control Path from your ssh config, so ssh re-uses them with no repeated prompts.</p>
             </div>
             <div class="feature-card">
                 <h3>Reads Your ssh config</h3>
@@ -226,14 +222,12 @@
                 <h3>Durable &amp; Idempotent</h3>
                 <p>Tunnels and their desired state live in Application Support; masters outlive the app. Reinstall a year later and pick up exactly where you left off.</p>
             </div>
-            <div class="feature-card">
-                <h3>Sparkle 2 Updates</h3>
-                <p>Includes built-in Sparkle 2 updater support for fast, seamless, notarized updates.</p>
-            </div>
         </section>
 
         <footer>
-            <p>&copy; 2026 Michael Bino. Built with Swift &amp; SwiftUI. Part of <a href="https://bino.io">Bino.io Apps</a>.</p>
+            <p>&copy; 2026 Michael Bino</p>
+            <p>Part of the Binoio Family of Apps</p>
+            <p>Released under the MIT License. <a href="https://github.com/binoio/lincoln">View on GitHub</a></p>
         </footer>
     </div>
 </body>

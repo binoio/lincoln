@@ -1,6 +1,6 @@
 # Lincoln
 
-A macOS GUI Dock and Menu Bar app for establishing, maintaining, disconnecting and reconfiguring SSH tunnels — SOCKS proxies and port forwards through a gateway such as `tigressgateway`.
+A macOS GUI Dock and Menu Bar app for establishing, maintaining, disconnecting and reconfiguring SSH tunnels — SOCKS proxies and port forwards through a gateway.
 
 ![Lincoln Icon](docs/images/icon.svg)
 
@@ -8,7 +8,7 @@ A macOS GUI Dock and Menu Bar app for establishing, maintaining, disconnecting a
 
 - **Tunnels as first-class objects**: Each tunnel is a host (an alias from `~/.ssh/config`, or a hostname) plus the SOCKS/local/remote forwards you want. Connect, disconnect, reconfigure and reorder them from the main window or the menu bar.
 - **Prompts answered in Lincoln**: Connect starts `ssh -M -N -f …` from Lincoln with no terminal. Keys in your agent or keychain mean no prompt at all; when ssh needs a person — a Duo passcode or push option, a key passphrase, an unknown host key — ssh hands the prompt to the bundled `lincoln-askpass` helper (`SSH_ASKPASS`), which relays it to a Lincoln panel over a local socket. Your answer goes straight back to ssh and is never stored. Prefer a terminal? Settings can route prompts to Terminal.app instead. Either way ssh backgrounds itself as a **ControlMaster** once authenticated.
-- **Shared with your terminal by default**: Lincoln uses the `ControlPath` your ssh config already defines (via `ssh -G`), so a terminal `ssh della` through `ProxyJump tg` reuses the tunnel and skips a second Duo prompt. Tunnels you start by hand show up in Lincoln too.
+- **Shared with your terminal by default**: Lincoln uses the `ControlPath` your ssh config already defines (via `ssh -G`), so a terminal `ssh <host>` through the gateway reuses the tunnel and skips a second Duo prompt. Tunnels you start by hand show up in Lincoln too.
 - **Watched, not babysat**: Lincoln polls the control sockets (`ssh -O check`) and reacts to network changes and wake from sleep. A dropped tunnel is shown and notified — never reconnected behind your back, since every connection may cost a Duo push.
 - **Keys only**: Password authentication is disabled on every tunnel Lincoln starts.
 - **Non-destructive**: Lincoln reads `~/.ssh/config` (and its `Include`s) to offer host aliases and import existing `DynamicForward`/`LocalForward` lines, and runs `ssh <alias>` with your normal configuration. It never writes to your ssh config.
@@ -27,7 +27,7 @@ Lincoln ──runs──▶ ssh -M -N -f -o ControlPath=<from ssh -G> -D 1080 �
              Lincoln prompt panel ◀── local socket ◀──────┘   answer ──▶ ssh
                    ▼
         control socket  ◀── ssh -O check / -O exit (Lincoln)
-                        ◀── ssh della  (your terminal, via ProxyJump tg)
+                        ◀── ssh <host>  (your terminal, via the gateway)
 
 Settings › Open Terminal.app: the same master started in a Terminal window instead.
 ```
