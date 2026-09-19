@@ -169,6 +169,50 @@
             font-weight: 600;
         }
 
+        .screenshots {
+            margin: 80px 0;
+        }
+
+        .screenshot-item > a > img {
+            width: 100%;
+            border-radius: var(--radius);
+            cursor: zoom-in;
+            transition: transform 0.2s;
+        }
+
+        .screenshot-item > a > img:hover {
+            transform: scale(1.01);
+        }
+
+        /* Lightbox effect */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            cursor: zoom-out;
+        }
+
+        .lightbox:target {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox img {
+            width: auto;
+            height: auto;
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: var(--radius);
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            object-fit: contain;
+        }
+
         footer {
             text-align: center;
             padding: 40px 0;
@@ -217,6 +261,17 @@
             <div class="feature-card">
                 <h3>Reads Your ssh config</h3>
                 <p>Imports host aliases and existing forwards from <code>~/.ssh/config</code> and runs ssh with your normal configuration. It never writes to it.</p>
+            </div>
+        </section>
+
+
+        <section class="screenshots">
+            <h2 style="text-align: center; margin-bottom: 40px;">Screenshots</h2>
+            <div class="screenshot-item">
+                <a href="#img1"><img src="images/main-window.png" alt="Lincoln's main window" loading="lazy"></a>
+                <div id="img1" class="lightbox" onclick="location.href='#';">
+                    <img src="images/main-window.png" alt="">
+                </div>
             </div>
         </section>
 
