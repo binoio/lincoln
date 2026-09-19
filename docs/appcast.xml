@@ -6,6 +6,22 @@
         <description>Most recent updates for Lincoln.</description>
         <language>en</language>
         <item>
+            <title>1.0.3</title>
+            <pubDate>Fri, 18 Sep 2026 20:10:34 -0400</pubDate>
+            <sparkle:version>1.0.3</sparkle:version>
+            <sparkle:shortVersionString>1.0.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Lincoln 1.0.3</h2>
+<p>Lincoln 1.0.3 moves diagnostics out of the editor into a Get Info window.</p>
+<ul>
+  <li><strong>Get Info</strong> (&#8984;I, also in the tunnel's &hellip; menu): a window per tunnel with the live status &mdash; state, control master pid, socket path and whether terminal sessions share it, forwards inherited from ssh config, last check and launch &mdash; plus the exact commands: the control master command, the terminal session command and the ssh_config snippet, each with a copy button.</li>
+  <li><strong>Leaner editor</strong>: the Status and Command preview sections and the reconnect help text are gone from the Configure form.</li>
+  <li><strong>&hellip; menu and Tunnel menu</strong>: Copy ssh Command (&#8679;&#8984;C) and Copy ssh_config Snippet live there now; the header button is removed.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.3/Lincoln-1.0.3.zip" length="2802178" type="application/octet-stream" sparkle:edSignature="45JmcIwSfPEuNzNSbQpDULVVJ6UkZpENOSQ6rdm1oi2/ZFMDaUCtuuhYO1//bickD5VrRjXmeczoFc+2vSsUCA=="/>
+        </item>
+        <item>
             <title>1.0.2</title>
             <pubDate>Fri, 18 Sep 2026 19:57:05 -0400</pubDate>
             <sparkle:version>1.0.2</sparkle:version>
@@ -33,26 +49,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.1/Lincoln-1.0.1.zip" length="2772800" type="application/octet-stream" sparkle:edSignature="3Hq7ZTf/Cl8kS29hU3g+m73KiVl2O9cDlsReJXWlUE8HqcmF4rYa0Vi2W1PU/DnJynPl0NSCH52L09Z8X6/LDg=="/>
-        </item>
-        <item>
-            <title>1.0.0</title>
-            <pubDate>Fri, 18 Sep 2026 19:50:07 -0400</pubDate>
-            <sparkle:version>1.0.0</sparkle:version>
-            <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Lincoln 1.0.0</h2>
-<p>Initial release of <strong>Lincoln</strong> — the macOS GUI Dock and Menu Bar app for establishing and maintaining SSH tunnels through a gateway.</p>
-<ul>
-  <li><strong>Tunnel Management</strong>: Create, import, connect, disconnect, reconfigure and reorder SOCKS proxies and local/remote port forwards from the main window or the menu bar.</li>
-  <li><strong>Silent Connect, Terminal When Needed</strong>: Lincoln starts ssh as a backgrounding ControlMaster with key authentication only; a Terminal window opens only when ssh needs a Duo answer, a passphrase or a host-key confirmation.</li>
-  <li><strong>Shared Connections</strong>: Tunnels use the ControlPath from your ssh config, so terminal sessions and ProxyJump hops reuse them without a second Duo prompt.</li>
-  <li><strong>Drop Detection</strong>: Control sockets are polled and re-checked on network changes and wake; a dropped tunnel is flagged and notified, never reconnected unasked.</li>
-  <li><strong>Non-Destructive Import</strong>: Reads <code>~/.ssh/config</code> to offer host aliases and existing forwards; never writes your ssh configuration.</li>
-  <li><strong>Durable State</strong>: Tunnels and their desired state survive reinstalling the app; masters keep running across Lincoln restarts.</li>
-  <li><strong>Sparkle 2 Updates</strong>: Integrated automatic updates.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.0/Lincoln-1.0.0.zip" length="2772805" type="application/octet-stream" sparkle:edSignature="cxrKyPfInvq0EVaHFqfXyHuXdCpApmUBvc3KX2naZuPAehjRuF4YrX3ZT1GKXav1eZuxJdDptHyT/XGaXY86DA=="/>
         </item>
     </channel>
 </rss>
