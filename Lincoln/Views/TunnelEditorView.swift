@@ -18,67 +18,6 @@ struct TunnelEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                Section("Status") {
-                    LabeledContent("State:") {
-                        Text(supervisor.state.label)
-                    }
-                    if case .connected(let pid, let since) = supervisor.state {
-                        LabeledContent("Control master:") {
-                            Text(pid.map { "pid \($0)" } ?? "running")
-                                .font(.system(.body, design: .monospaced))
-                        }
-                        LabeledContent("Connected since:") {
-                            Text(since.formatted(date: .abbreviated, time: .shortened))
-                        }
-                    }
-                    if let resolved = supervisor.controlPath {
-                        LabeledContent("Control socket:") {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(resolved.path)
-                                    .font(.system(.caption, design: .monospaced))
-                                    .textSelection(.enabled)
-                                Text(resolved.isFromConfig
-                                     ? "From your ssh config — terminal sessions and ProxyJump hops through this host share the tunnel."
-                                     : "Your ssh config has no ControlPath for this host, so Lincoln uses its own socket. Terminal sessions will not share it.")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    if let configured = supervisor.controlPath?.destination.configuredForwards, !configured.isEmpty {
-                        LabeledContent("From ssh config:") {
-                            Text(configured.map(\.summary).joined(separator: ", "))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    if let checked = supervisor.lastChecked {
-                        LabeledContent("Last checked:") {
-                            Text(checked.formatted(date: .omitted, time: .standard))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    if let session = supervisor.sessionCommandLine() {
-                        LabeledContent("Terminal session:") {
-                            Text(session)
-                                .font(.system(.caption, design: .monospaced))
-                                .textSelection(.enabled)
-                        }
-                    }
-                    if let mode = supervisor.lastLaunchMode {
-                        LabeledContent("Launched:") {
-                            Text(mode.description)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    if !supervisor.lastCommandLine.isEmpty {
-                        LabeledContent("Last launch:") {
-                            Text(supervisor.lastCommandLine)
-                                .font(.system(.caption, design: .monospaced))
-                                .textSelection(.enabled)
-                        }
-                    }
-                }
-
                 Section("Tunnel") {
                     TextField("Name:", text: $editor.draft.name, prompt: Text("Gateway SOCKS"))
                         .textFieldStyle(.roundedBorder)
@@ -113,10 +52,7 @@ struct TunnelEditorView: View {
                 }
 
                 Section("Behavior") {
-                    Toggle("Connect when Lincoln launches (opens Terminal)", isOn: $editor.draft.autoConnect)
-                    Text("A tunnel that drops is shown as dropped and never reconnected on its own, since each connection may cost a Duo push.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Toggle("Connect when Lincoln launches", isOn: $editor.draft.autoConnect)
                 }
 
                 Section {
@@ -135,23 +71,6 @@ struct TunnelEditorView: View {
                         .frame(minHeight: 48, maxHeight: 96)
                 }
 
-                Section("Command preview") {
-                    Text(editor.commandPreview(controlPath: supervisor.controlPath?.path, configuredForwards: supervisor.controlPath?.destination.configuredForwards ?? []))
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                        .foregroundColor(.secondary)
-                    HStack {
-                        Button("Copy Command") {
-                            copy(editor.commandPreview(controlPath: supervisor.controlPath?.path, configuredForwards: supervisor.controlPath?.destination.configuredForwards ?? []))
-                        }
-                        Button("Copy ssh_config Snippet") {
-                            copy(editor.configSnippet)
-                        }
-                        .help("An equivalent Host block you can paste into your own ssh config by hand")
-                    }
-                    .buttonStyle(.borderless)
-                    .font(.caption)
-                }
             }
             .formStyle(.grouped)
 
@@ -229,8 +148,4 @@ struct TunnelEditorView: View {
         }
     }
 
-    private func copy(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-    }
 }

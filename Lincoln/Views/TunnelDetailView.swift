@@ -10,7 +10,7 @@ struct TunnelDetailView: View {
     @ObservedObject var manager: TunnelManager
     @ObservedObject var supervisor: TunnelSupervisor
     @StateObject private var editor: TunnelEditorViewModel
-    @State private var copiedCommand = false
+    @Environment(\.openWindow) private var openWindow
 
     init(manager: TunnelManager, supervisor: TunnelSupervisor) {
         self.manager = manager
@@ -44,6 +44,12 @@ struct TunnelDetailView: View {
                 }
                 Spacer()
                 Menu {
+                    Button("Get Info") { openWindow(id: "info", value: supervisor.id) }
+                    Divider()
+                    Button("Copy ssh Command") { manager.copySessionCommand(id: supervisor.id) }
+                        .disabled(supervisor.sessionCommandLine() == nil)
+                    Button("Copy ssh_config Snippet") { manager.copyConfigSnippet(id: supervisor.id) }
+                    Divider()
                     Button("Duplicate Tunnel") { manager.duplicate(id: supervisor.id) }
                     Button("Remove Tunnel…", role: .destructive) { manager.requestRemoval(id: supervisor.id) }
                 } label: {
@@ -52,13 +58,6 @@ struct TunnelDetailView: View {
                 .menuStyle(.borderlessButton)
                 .fixedSize()
                 .help("More actions")
-                Button {
-                    copySessionCommand()
-                } label: {
-                    Label(copiedCommand ? "Copied" : "Copy ssh Command", systemImage: copiedCommand ? "checkmark" : "doc.on.doc")
-                }
-                .help("Copy an ssh command for your terminal that opens a session on this host through the tunnel (no second Duo prompt)")
-                .disabled(supervisor.sessionCommandLine() == nil)
                 Button {
                     manager.toggle(id: supervisor.id)
                 } label: {
@@ -104,16 +103,6 @@ struct TunnelDetailView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
         .background(Color(NSColor.windowBackgroundColor))
-    }
-
-    private func copySessionCommand() {
-        guard let command = supervisor.sessionCommandLine() else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(command, forType: .string)
-        withAnimation { copiedCommand = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation { copiedCommand = false }
-        }
     }
 
     private func save() {

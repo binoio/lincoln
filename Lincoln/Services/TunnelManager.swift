@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import AppKit
 import Combine
 import LincolnCore
 
@@ -308,6 +309,29 @@ final class TunnelManager: ObservableObject {
     /// Network change or wake: check right away instead of waiting for the timer.
     func pollSoon() {
         scheduleNextPoll(after: 0.5)
+    }
+
+    // MARK: - Clipboard
+
+    /// An ssh command for the user's terminal that rides the tunnel's master.
+    @discardableResult
+    func copySessionCommand(id: UUID?) -> Bool {
+        guard let command = supervisor(for: id)?.sessionCommandLine() else { return false }
+        copyToPasteboard(command)
+        return true
+    }
+
+    /// The equivalent Host block, for users who want it in their own config.
+    @discardableResult
+    func copyConfigSnippet(id: UUID?) -> Bool {
+        guard let tunnel = supervisor(for: id)?.tunnel else { return false }
+        copyToPasteboard(SSHCommandBuilder.sshConfigSnippet(for: tunnel))
+        return true
+    }
+
+    private func copyToPasteboard(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     // MARK: - Import

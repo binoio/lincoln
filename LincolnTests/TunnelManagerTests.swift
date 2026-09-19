@@ -213,6 +213,20 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertTrue(manager.supervisors.isEmpty)
     }
 
+    func testClipboardHelpers() async {
+        let manager = makeManager()
+        manager.load()
+        let a = manager.add(TestFixtures.tunnel(name: "A"))
+        XCTAssertFalse(manager.copySessionCommand(id: nil))
+        XCTAssertFalse(manager.copySessionCommand(id: a.id), "no control path resolved yet")
+        await manager.pollAll()
+        XCTAssertTrue(manager.copySessionCommand(id: a.id))
+        XCTAssertEqual(NSPasteboard.general.string(forType: .string), "/usr/bin/ssh -o ControlPath=\(socketPath) -- tg")
+        XCTAssertTrue(manager.copyConfigSnippet(id: a.id))
+        XCTAssertTrue(NSPasteboard.general.string(forType: .string)!.hasPrefix("Host lincoln-a\n"))
+        XCTAssertFalse(manager.copyConfigSnippet(id: UUID()))
+    }
+
     func testDuplicateAndMove() {
         let manager = makeManager()
         manager.load()

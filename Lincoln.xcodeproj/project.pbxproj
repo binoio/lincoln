@@ -31,6 +31,7 @@
 		B23 /* StatusBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23; };
 		B24 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24; };
 		B25 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F25; };
+		B27 /* TunnelInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F27; };
 		B90 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F30; };
 		B91 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = P01 /* Sparkle */; };
 		B92 /* LincolnCore in Frameworks */ = {isa = PBXBuildFile; productRef = P03 /* LincolnCore */; };
@@ -92,6 +93,7 @@
 		F23 /* StatusBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadgeView.swift; sourceTree = "<group>"; };
 		F24 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F25 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
+		F27 /* TunnelInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelInfoView.swift; sourceTree = "<group>"; };
 		F30 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F32 /* Lincoln.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Lincoln.entitlements; sourceTree = "<group>"; };
@@ -214,6 +216,7 @@
 				F23 /* StatusBadgeView.swift */,
 				F24 /* SettingsView.swift */,
 				F25 /* LogsView.swift */,
+				F27 /* TunnelInfoView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -406,6 +409,7 @@
 				B23 /* StatusBadgeView.swift in Sources */,
 				B24 /* SettingsView.swift in Sources */,
 				B25 /* LogsView.swift in Sources */,
+				B27 /* TunnelInfoView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -527,7 +531,7 @@
 				CODE_SIGN_ENTITLEMENTS = Lincoln/Lincoln.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 1.0.3;
 				ENABLE_DEBUG_DYLIB = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lincoln/Info.plist;
@@ -535,7 +539,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.Lincoln;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;
@@ -551,14 +555,14 @@
 				CODE_SIGN_ENTITLEMENTS = Lincoln/Lincoln.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.2;
+				CURRENT_PROJECT_VERSION = 1.0.3;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Lincoln/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = io.binoio.Lincoln;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_UPTO_DATE_CHECK = YES;

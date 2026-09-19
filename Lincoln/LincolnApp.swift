@@ -120,7 +120,10 @@ struct LincolnApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .commands {
-            LincolnCommands(manager: manager, updaterViewModel: appDelegate.updaterViewModel, openLogs: {
+            LincolnCommands(manager: manager, updaterViewModel: appDelegate.updaterViewModel, openInfo: { id in
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "info", value: id)
+            }, openLogs: {
                 NSApp.activate(ignoringOtherApps: true)
                 openWindow(id: "logs")
             }, openMainWindow: {
@@ -165,6 +168,14 @@ struct LincolnApp: App {
         }
         .menuBarExtraStyle(.menu)
 
+        // MARK: - Get Info Window (one per tunnel)
+        WindowGroup("Tunnel Info", id: "info", for: UUID.self) { $tunnelID in
+            TunnelInfoView(manager: manager, tunnelID: tunnelID)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+        .windowResizability(.contentSize)
+
         // MARK: - Diagnostic Logs Window
         Window("Diagnostic Logs", id: "logs") {
             LogsView(logStore: logStore)
@@ -200,6 +211,7 @@ struct LincolnApp: App {
 struct LincolnCommands: Commands {
     @ObservedObject var manager: TunnelManager
     @ObservedObject var updaterViewModel: UpdaterViewModel
+    var openInfo: (UUID) -> Void
     var openLogs: () -> Void
     var openMainWindow: () -> Void
     var quit: () -> Void
@@ -243,7 +255,7 @@ struct LincolnCommands: Commands {
         }
 
         CommandMenu("Tunnel") {
-            TunnelMenuItems(manager: manager)
+            TunnelMenuItems(manager: manager, openInfo: openInfo)
         }
 
         CommandGroup(after: .windowArrangement) {
@@ -255,6 +267,7 @@ struct LincolnCommands: Commands {
 
 private struct TunnelMenuItems: View {
     @ObservedObject var manager: TunnelManager
+    var openInfo: (UUID) -> Void
 
     private var selectedIsActive: Bool {
         manager.selectedSupervisor?.state.isActive == true
@@ -267,14 +280,24 @@ private struct TunnelMenuItems: View {
         .keyboardShortcut("t", modifiers: .command)
         .disabled(manager.selectedTunnelID == nil)
 
+        Button("Get Info") {
+            if let id = manager.selectedTunnelID { openInfo(id) }
+        }
+        .keyboardShortcut("i", modifiers: .command)
+        .disabled(manager.selectedTunnelID == nil)
+
+        Divider()
+
         Button("Copy ssh Command") {
-            if let command = manager.selectedSupervisor?.sessionCommandLine() {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(command, forType: .string)
-            }
+            manager.copySessionCommand(id: manager.selectedTunnelID)
         }
         .keyboardShortcut("c", modifiers: [.command, .shift])
         .disabled(manager.selectedSupervisor?.sessionCommandLine() == nil)
+
+        Button("Copy ssh_config Snippet") {
+            manager.copyConfigSnippet(id: manager.selectedTunnelID)
+        }
+        .disabled(manager.selectedTunnelID == nil)
 
         Divider()
 
