@@ -63,9 +63,11 @@ public struct SSHCommandBuilder {
 
         option("ControlPath", controlPath)
         option("ExitOnForwardFailure", "yes")
-        // Keys only. Keyboard-interactive stays enabled for Duo.
+        // Keys only. Keyboard-interactive must stay enabled for Duo — and
+        // note NumberOfPasswordPrompts=0 would disable it too (ssh counts
+        // keyboard-interactive attempts against the same limit), so only
+        // password authentication itself is turned off.
         option("PasswordAuthentication", "no")
-        option("NumberOfPasswordPrompts", "0")
         option("ServerAliveInterval", String(environment.serverAliveInterval))
         option("ServerAliveCountMax", String(environment.serverAliveCountMax))
 

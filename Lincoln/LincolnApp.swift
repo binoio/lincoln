@@ -103,6 +103,7 @@ struct LincolnApp: App {
         }
         networkMonitor.onPathChanged = { [weak manager] in manager?.pollSoon() }
         powerMonitor.onDidWake = { [weak manager] in manager?.pollSoon() }
+        powerMonitor.onDidBecomeActive = { [weak manager] in manager?.pollSoon() }
         networkMonitor.start()
         powerMonitor.start()
     }

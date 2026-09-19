@@ -37,9 +37,13 @@ final class TunnelManager: ObservableObject {
     private let stateDirectory: URL
     private var cancellables = Set<AnyCancellable>()
     private var pollTimer: Timer?
+    private let socketWatcher = SocketDirectoryWatcher()
+    private var isPollingEnabled = false
 
-    /// Seconds between `ssh -O check` rounds; faster while something connects.
-    var idlePollInterval: TimeInterval = 5
+    /// Seconds between `ssh -O check` rounds while a tunnel is up; faster
+    /// while something connects or disconnects. With no active tunnel the
+    /// timer stops and the socket directories are watched instead.
+    var activePollInterval: TimeInterval = 5
     var connectingPollInterval: TimeInterval = 1
 
     init(
@@ -113,28 +117,52 @@ final class TunnelManager: ObservableObject {
     }
 
     func startPolling() {
-        guard pollTimer == nil else { return }
+        guard !isPollingEnabled else { return }
+        isPollingEnabled = true
+        socketWatcher.onChange = { [weak self] in self?.pollSoon() }
         scheduleNextPoll(after: 0)
     }
 
     func stopPolling() {
+        isPollingEnabled = false
         pollTimer?.invalidate()
         pollTimer = nil
+        socketWatcher.stop()
+    }
+
+    /// True while some tunnel is up or in transition — the only time a
+    /// timer-driven `ssh -O check` round is worth its cost.
+    var hasActiveTunnels: Bool {
+        supervisors.contains { $0.state.isActive || $0.state == .disconnecting }
     }
 
     private func scheduleNextPoll(after delay: TimeInterval) {
+        guard isPollingEnabled else { return }
         pollTimer?.invalidate()
         pollTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self else { return }
                 await self.pollAll()
-                let interval = self.supervisors.contains { $0.state.isConnecting || $0.state == .disconnecting } ? self.connectingPollInterval : self.idlePollInterval
-                self.scheduleNextPoll(after: interval)
+                self.scheduleFollowUpPoll()
             }
         }
     }
 
-    /// Checks every tunnel's control socket concurrently.
+    private func scheduleFollowUpPoll() {
+        guard isPollingEnabled else { return }
+        pollTimer?.invalidate()
+        pollTimer = nil
+        let transitioning = supervisors.contains { $0.state.isConnecting || $0.state == .disconnecting }
+        if transitioning {
+            scheduleNextPoll(after: connectingPollInterval)
+        } else if hasActiveTunnels {
+            scheduleNextPoll(after: activePollInterval)
+        }
+        // Otherwise idle: the socket directory watcher wakes us up.
+    }
+
+    /// Checks every tunnel's control socket concurrently, then updates the
+    /// set of socket directories being watched.
     func pollAll() async {
         await withTaskGroup(of: Void.self) { group in
             for supervisor in supervisors {
@@ -143,7 +171,19 @@ final class TunnelManager: ObservableObject {
                 }
             }
         }
+        updateSocketWatch()
     }
+
+    private func updateSocketWatch() {
+        guard isPollingEnabled else { return }
+        let directories = Set(supervisors.compactMap { supervisor -> String? in
+            guard let path = supervisor.controlPath?.path else { return nil }
+            return (path as NSString).deletingLastPathComponent
+        })
+        socketWatcher.watch(directories: directories)
+    }
+
+    var watchedSocketDirectories: Set<String> { socketWatcher.watchedDirectories }
 
     private func makeSupervisor(for tunnel: Tunnel) -> TunnelSupervisor {
         let supervisor = TunnelSupervisor(
@@ -306,7 +346,8 @@ final class TunnelManager: ObservableObject {
         stopPolling()
     }
 
-    /// Network change or wake: check right away instead of waiting for the timer.
+    /// Network change, wake, socket directory change or app activation:
+    /// check right away instead of waiting for the timer.
     func pollSoon() {
         scheduleNextPoll(after: 0.5)
     }

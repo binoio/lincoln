@@ -10,6 +10,8 @@ import AppKit
 final class PowerMonitor {
     var onWillSleep: (() -> Void)?
     var onDidWake: (() -> Void)?
+    /// The user brought Lincoln to the front: a cheap moment to re-check.
+    var onDidBecomeActive: (() -> Void)?
 
     private var observers: [NSObjectProtocol] = []
 
@@ -28,11 +30,18 @@ final class PowerMonitor {
                 self?.onDidWake?()
             }
         })
+        observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                self?.onDidBecomeActive?()
+            }
+        })
     }
 
     func stop() {
-        let center = NSWorkspace.shared.notificationCenter
-        observers.forEach { center.removeObserver($0) }
+        observers.forEach {
+            NSWorkspace.shared.notificationCenter.removeObserver($0)
+            NotificationCenter.default.removeObserver($0)
+        }
         observers.removeAll()
     }
 }

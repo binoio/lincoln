@@ -1,0 +1,6 @@
+<h2>Lincoln 1.0.4</h2>
+<p>Lincoln 1.0.4 fixes Duo logins and stops polling when nothing is connected.</p>
+<ul>
+  <li><strong>Duo works again</strong>: The control master was started with <code>NumberOfPasswordPrompts=0</code>, which OpenSSH also applies to keyboard-interactive authentication &mdash; so gateways that require Duo after the key were refused with &ldquo;Permission denied&rdquo; before any prompt. Only <code>PasswordAuthentication=no</code> is pinned now; keys stay mandatory and Duo prompts appear in Terminal as intended.</li>
+  <li><strong>No idle polling</strong>: <code>ssh -O check</code> runs on a timer only while a tunnel is connected or in transition. When nothing is active, Lincoln watches the control-socket directories instead, so a master started by hand in a terminal is still adopted immediately; it also re-checks on network changes, wake and when the app comes to the front.</li>
+</ul>

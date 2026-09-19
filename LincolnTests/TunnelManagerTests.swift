@@ -239,17 +239,61 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertEqual(manager.document.tunnels.map(\.name), ["A copy", "A"])
     }
 
-    func testPollingTimerRuns() async {
+    func testPollingTimerRunsWhileActiveAndStopsWhenIdle() async {
         let manager = makeManager()
         manager.load()
         let supervisor = manager.add(TestFixtures.tunnel())
-        manager.idlePollInterval = 0.05
-        manager.startPolling()
+        manager.activePollInterval = 0.05
         socket.running[socketPath] = 1
+        manager.startPolling()
         let connected = expectation(description: "connected")
         connected.assertForOverFulfill = false
         supervisor.onStateChange = { if $0.state.isConnected { connected.fulfill() } }
         await fulfillment(of: [connected], timeout: 3)
+        XCTAssertTrue(manager.hasActiveTunnels)
+
+        // While connected the timer keeps checking…
+        let before = socket.checks.count
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertGreaterThan(socket.checks.count, before)
+
+        // …after the master goes away and the drop is acknowledged, it stops.
+        socket.running.removeAll()
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        manager.disconnect(id: supervisor.id)
+        await drainMainQueue()
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertFalse(manager.hasActiveTunnels)
+        let idleCount = socket.checks.count
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertEqual(socket.checks.count, idleCount, "no polling while nothing is active")
+        manager.stopPolling()
+    }
+
+    func testSocketDirectoryChangeWakesIdlePolling() async throws {
+        let directory = URL(fileURLWithPath: "/tmp/lincoln-watch-\(UUID().uuidString.prefix(8))", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let path = directory.appendingPathComponent("socket-alice@tg:22").path
+        environment.resolved = ResolvedControlPath(path: path, isFromConfig: true,
+                                                   destination: SSHDestination(user: "alice", hostName: "tg", port: 22, configuredControlPath: path))
+        let manager = makeManager()
+        manager.load()
+        let supervisor = manager.add(TestFixtures.tunnel())
+        manager.startPolling()
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertEqual(supervisor.state, .idle)
+        XCTAssertEqual(manager.watchedSocketDirectories, [directory.path])
+        let idleCount = socket.checks.count
+
+        // A master started by hand in a terminal creates its socket file…
+        socket.running[path] = 77
+        FileManager.default.createFile(atPath: path, contents: nil)
+        let adopted = expectation(description: "adopted")
+        adopted.assertForOverFulfill = false
+        supervisor.onStateChange = { if $0.state.isConnected { adopted.fulfill() } }
+        await fulfillment(of: [adopted], timeout: 3)
+        XCTAssertGreaterThan(socket.checks.count, idleCount)
         manager.stopPolling()
     }
 

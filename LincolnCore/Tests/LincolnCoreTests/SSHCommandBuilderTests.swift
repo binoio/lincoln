@@ -12,7 +12,6 @@ final class SSHCommandBuilderTests: XCTestCase {
             "-o", "ControlPath=\(controlPath)",
             "-o", "ExitOnForwardFailure=yes",
             "-o", "PasswordAuthentication=no",
-            "-o", "NumberOfPasswordPrompts=0",
             "-o", "ServerAliveInterval=30",
             "-o", "ServerAliveCountMax=3",
             "-D", "1080",
@@ -64,6 +63,13 @@ final class SSHCommandBuilderTests: XCTestCase {
         let args = SSHCommandBuilder.masterArguments(for: custom, controlPath: "/tmp/s")
         XCTAssertEqual(args.filter { $0 == "-L" }.count, 1)
         XCTAssertLessThan(args.firstIndex(of: "PasswordAuthentication=no")!, args.firstIndex(of: "PasswordAuthentication=yes")!)
+    }
+
+    func testKeyboardInteractiveStaysAvailableForDuo() {
+        let args = SSHCommandBuilder.masterArguments(for: tunnel, controlPath: "/tmp/s")
+        XCTAssertFalse(args.contains { $0.hasPrefix("NumberOfPasswordPrompts") }, "NumberOfPasswordPrompts=0 also disables keyboard-interactive")
+        XCTAssertFalse(args.contains { $0.hasPrefix("KbdInteractiveAuthentication") })
+        XCTAssertTrue(args.contains("PasswordAuthentication=no"))
     }
 
     func testHeadlessMasterArguments() {
