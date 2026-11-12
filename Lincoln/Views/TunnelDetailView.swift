@@ -28,6 +28,8 @@ struct TunnelDetailView: View {
             // Keep the editor in sync when the tunnel changes elsewhere (e.g. import).
             if !editor.hasChanges && editor.original != tunnel {
                 editor.reset(to: tunnel)
+            } else if editor.hasChanges {
+                editor.adoptExternalRename(tunnel.name)
             }
         }
     }
@@ -38,10 +40,15 @@ struct TunnelDetailView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(supervisor.tunnel.displayName)
                         .font(.title2.bold())
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                     Text(supervisor.tunnel.destinationSummary)
                         .font(.callout)
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
+                .layoutPriority(-1)
                 Spacer()
                 Menu {
                     Button("Get Info") { openWindow(id: "info", value: supervisor.id) }
@@ -50,6 +57,7 @@ struct TunnelDetailView: View {
                         .disabled(supervisor.sessionCommandLine() == nil)
                     Button("Copy ssh_config Snippet") { manager.copyConfigSnippet(id: supervisor.id) }
                     Divider()
+                    Button("Rename Tunnel") { manager.requestRename(id: supervisor.id) }
                     Button("Duplicate Tunnel") { manager.duplicate(id: supervisor.id) }
                     Button("Remove Tunnel…", role: .destructive) { manager.requestRemoval(id: supervisor.id) }
                 } label: {
@@ -67,6 +75,7 @@ struct TunnelDetailView: View {
                 .tint(supervisor.state.isActive ? .red : .accentColor)
                 .keyboardShortcut("t", modifiers: .command)
                 .disabled(!supervisor.tunnel.isValid && !supervisor.state.isActive)
+                .fixedSize()
             }
 
             HStack {
@@ -96,6 +105,7 @@ struct TunnelDetailView: View {
                 Spacer()
                 // Status sits under the Connect/Disconnect button it describes.
                 StatusBadgeView(state: supervisor.state)
+                    .fixedSize()
             }
         }
         .padding(.horizontal, 20)

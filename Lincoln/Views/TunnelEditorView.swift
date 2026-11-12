@@ -82,6 +82,7 @@ struct TunnelEditorView: View {
                         .font(.caption)
                         .foregroundColor(.orange)
                         .lineLimit(2)
+                        .layoutPriority(-1)
                 } else if editor.hasChanges {
                     Label(supervisor.state.isActive ? "Changes apply the next time the tunnel connects." : "Unsaved changes", systemImage: "pencil.circle")
                         .font(.caption)
@@ -91,7 +92,7 @@ struct TunnelEditorView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 Button("Revert") { editor.revert() }
                     .disabled(!editor.hasChanges)
                 Button("Save") { onSave() }
@@ -111,7 +112,7 @@ struct TunnelEditorView: View {
                 HStack {
                     TextField("Key", text: $option.key, prompt: Text("Compression"))
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 180)
+                        .frame(minWidth: 100, idealWidth: 180, maxWidth: 180)
                     TextField("Value", text: $option.value, prompt: Text("yes"))
                         .textFieldStyle(.roundedBorder)
                     Button {

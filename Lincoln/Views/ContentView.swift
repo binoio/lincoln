@@ -14,13 +14,15 @@ public struct ContentView: View {
     public var body: some View {
         NavigationSplitView {
             sidebar
-                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
+                .navigationSplitViewColumnWidth(min: Self.sidebarMinWidth, ideal: 260, max: Self.sidebarMaxWidth)
         } detail: {
             if let supervisor = manager.selectedSupervisor {
                 TunnelDetailView(manager: manager, supervisor: supervisor)
                     .id(supervisor.id)
+                    .frame(minWidth: Self.detailMinWidth)
             } else {
                 emptyState
+                    .frame(minWidth: Self.detailMinWidth)
             }
         }
         .navigationTitle("Lincoln")
@@ -52,8 +54,14 @@ public struct ContentView: View {
         } message: {
             Text("The tunnel is removed from Lincoln. A running control master is left alone, and your ~/.ssh/config is not touched.")
         }
-        .frame(minWidth: 760, idealWidth: 900, minHeight: 500, idealHeight: 620)
+        .frame(minWidth: Self.sidebarMinWidth + Self.detailMinWidth, idealWidth: 960, minHeight: 500, idealHeight: 620)
     }
+
+    /// Narrowest the detail pane may get before its forwards grid and header
+    /// would spill past the window edge.
+    static let detailMinWidth: CGFloat = 600
+    static let sidebarMinWidth: CGFloat = 220
+    static let sidebarMaxWidth: CGFloat = 360
 
     private var sidebar: some View {
         VStack(spacing: 0) {
@@ -63,7 +71,15 @@ public struct ContentView: View {
             )) {
                 Section("Tunnels") {
                     ForEach(manager.supervisors) { supervisor in
-                        TunnelSidebarRow(supervisor: supervisor)
+                        TunnelSidebarRow(
+                            supervisor: supervisor,
+                            isRenaming: manager.renamingTunnelID == supervisor.id,
+                            onCommitRename: { name in
+                                manager.rename(id: supervisor.id, to: name)
+                                manager.renamingTunnelID = nil
+                            },
+                            onCancelRename: { manager.renamingTunnelID = nil }
+                        )
                             .tag(supervisor.id)
                             .contextMenu { contextMenu(for: supervisor) }
                     }
@@ -82,7 +98,9 @@ public struct ContentView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                Spacer()
+                    .truncationMode(.tail)
+                    .layoutPriority(-1)
+                Spacer(minLength: 4)
                 Button {
                     manager.connectAll()
                 } label: {
@@ -116,6 +134,10 @@ public struct ContentView: View {
     private func contextMenu(for supervisor: TunnelSupervisor) -> some View {
         Button(supervisor.state.isActive ? "Disconnect" : "Connect") {
             manager.toggle(id: supervisor.id)
+        }
+        Button("Rename") {
+            manager.selectedTunnelID = supervisor.id
+            manager.requestRename(id: supervisor.id)
         }
         Button("Duplicate") {
             manager.duplicate(id: supervisor.id)
