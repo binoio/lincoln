@@ -22,6 +22,20 @@ final class TunnelEditorViewModelTests: XCTestCase {
         XCTAssertFalse(editor.hasChanges)
     }
 
+    func testExternalRenameKeepsOtherUnsavedEdits() {
+        let editor = TunnelEditorViewModel(tunnel: TestFixtures.tunnel())
+        editor.portText = "2222"
+        editor.adoptExternalRename("Sidebar Name")
+        XCTAssertEqual(editor.draft.name, "Sidebar Name")
+        XCTAssertEqual(editor.portText, "2222")
+        XCTAssertTrue(editor.hasChanges)
+        XCTAssertEqual(editor.commit()?.name, "Sidebar Name")
+
+        editor.draft.name = "Typed Here"
+        editor.adoptExternalRename("Other")
+        XCTAssertEqual(editor.draft.name, "Typed Here", "an in-progress name edit wins")
+    }
+
     func testValidationBlocksSave() {
         let editor = TunnelEditorViewModel(tunnel: TestFixtures.tunnel())
         editor.portText = "abc"

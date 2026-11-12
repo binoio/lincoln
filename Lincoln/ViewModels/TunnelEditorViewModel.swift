@@ -63,6 +63,14 @@ final class TunnelEditorViewModel: ObservableObject {
         identityFileText = tunnel.identityFile ?? ""
     }
 
+    /// Picks up a rename made elsewhere (the sidebar) without discarding
+    /// unsaved edits to other fields. A name the user is mid-editing wins.
+    func adoptExternalRename(_ name: String) {
+        guard original.name != name else { return }
+        if draft.name == original.name { draft.name = name }
+        original.name = name
+    }
+
     func revert() {
         reset(to: original)
     }

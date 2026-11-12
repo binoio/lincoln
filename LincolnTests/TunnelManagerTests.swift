@@ -76,6 +76,24 @@ final class TunnelManagerTests: XCTestCase {
         XCTAssertEqual(manager.selectedTunnelID, supervisor.id)
     }
 
+    func testRenameTrimsPersistsAndIgnoresBlank() throws {
+        let manager = makeManager()
+        manager.load()
+        let supervisor = manager.addNewTunnel()
+
+        manager.requestRename(id: supervisor.id)
+        XCTAssertEqual(manager.renamingTunnelID, supervisor.id)
+        manager.requestRename(id: UUID())
+        XCTAssertEqual(manager.renamingTunnelID, supervisor.id, "unknown ids are ignored")
+
+        manager.rename(id: supervisor.id, to: "  Office SOCKS  ")
+        XCTAssertEqual(supervisor.tunnel.name, "Office SOCKS")
+        XCTAssertEqual(try store.load().document.tunnels.first?.name, "Office SOCKS")
+
+        manager.rename(id: supervisor.id, to: "   ")
+        XCTAssertEqual(supervisor.tunnel.name, "Office SOCKS", "blank rename is ignored")
+    }
+
     func testConnectRecordsDesiredUpAndRestoreMarksDropped() async throws {
         let manager = makeManager()
         manager.load()

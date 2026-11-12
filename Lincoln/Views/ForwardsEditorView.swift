@@ -11,9 +11,9 @@ import LincolnCore
 struct ForwardsEditorView: View {
     @ObservedObject var editor: TunnelEditorViewModel
 
-    private let typeWidth: CGFloat = 132
-    private let bindWidth: CGFloat = 120
-    private let portWidth: CGFloat = 68
+    private let typeWidth: CGFloat = 118
+    private let bindWidth: CGFloat = 96
+    private let portWidth: CGFloat = 60
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -64,7 +64,7 @@ struct ForwardsEditorView: View {
                                     .frame(width: 14)
                                 TextField("", text: $forward.targetHost, prompt: Text("files.example.org"))
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(minWidth: 140, maxWidth: .infinity)
+                                    .frame(minWidth: 80, maxWidth: .infinity)
                                     .autocorrectionDisabled()
                                 TextField("", value: $forward.targetPort, format: .number.grouping(.never))
                                     .textFieldStyle(.roundedBorder)
@@ -85,26 +85,32 @@ struct ForwardsEditorView: View {
                 }
             }
 
-            HStack(spacing: 12) {
-                Button {
-                    editor.addForward(kind: .dynamic)
-                } label: {
-                    Label("SOCKS Proxy", systemImage: "plus.circle")
-                }
-                Button {
-                    editor.addForward(kind: .local)
-                } label: {
-                    Label("Local Forward", systemImage: "plus.circle")
-                }
-                Button {
-                    editor.addForward(kind: .remote)
-                } label: {
-                    Label("Remote Forward", systemImage: "plus.circle")
-                }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { addButtons }
+                VStack(alignment: .leading, spacing: 4) { addButtons }
             }
             .buttonStyle(.borderless)
             .font(.caption)
             .padding(.top, 2)
+        }
+    }
+
+    @ViewBuilder
+    private var addButtons: some View {
+        Button {
+            editor.addForward(kind: .dynamic)
+        } label: {
+            Label("SOCKS Proxy", systemImage: "plus.circle")
+        }
+        Button {
+            editor.addForward(kind: .local)
+        } label: {
+            Label("Local Forward", systemImage: "plus.circle")
+        }
+        Button {
+            editor.addForward(kind: .remote)
+        } label: {
+            Label("Remote Forward", systemImage: "plus.circle")
         }
     }
 

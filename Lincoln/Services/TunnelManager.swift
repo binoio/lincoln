@@ -20,6 +20,8 @@ final class TunnelManager: ObservableObject {
     /// A removal awaiting the user's confirmation (set by menu, toolbar,
     /// context menu or the Delete key; the main window shows the alert).
     @Published var pendingRemovalID: UUID?
+    /// The sidebar row currently showing an inline rename field.
+    @Published var renamingTunnelID: UUID?
     /// The ssh-config import sheet, opened from File › Import… or the empty state.
     @Published var showingImport = false
     @Published private(set) var loadWarning: String?
@@ -343,6 +345,22 @@ final class TunnelManager: ObservableObject {
         }
         persist()
         LogStore.log(level: .info, category: "Tunnels", message: "Removed \(name)")
+    }
+
+    /// Renames a tunnel in place. Blank names are ignored so a tunnel never
+    /// loses its label to an accidental empty commit.
+    func rename(id: UUID, to newName: String) {
+        guard let supervisor = supervisor(for: id) else { return }
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != supervisor.tunnel.name else { return }
+        var tunnel = supervisor.tunnel
+        tunnel.name = trimmed
+        update(tunnel)
+    }
+
+    func requestRename(id: UUID?) {
+        guard let id = id, supervisor(for: id) != nil else { return }
+        renamingTunnelID = id
     }
 
     func requestRemoval(id: UUID?) {
