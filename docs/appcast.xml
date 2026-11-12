@@ -6,6 +6,21 @@
         <description>Most recent updates for Lincoln.</description>
         <language>en</language>
         <item>
+            <title>1.2.0</title>
+            <pubDate>Thu, 12 Nov 2026 18:21:58 -0500</pubDate>
+            <sparkle:version>1.2.0</sparkle:version>
+            <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>Lincoln 1.2.0</h2>
+<p>Lincoln 1.2.0 lets you rename tunnels right in the sidebar and keeps the main window's contents inside the window at any size.</p>
+<ul>
+  <li><strong>Rename from the sidebar</strong>: Right-click a tunnel and choose <strong>Rename</strong>, or choose <strong>Rename Tunnel</strong> from the actions menu in the detail pane. Press Return or click away to save, or Escape to cancel. Unsaved edits in the editor are kept.</li>
+  <li><strong>Fix</strong>: The forwards table, the tunnel header and the sidebar rows no longer spill past the edge of the window when it's narrow. Long names are shortened with an ellipsis, and the main window can't get narrower than its contents.</li>
+</ul>
+]]></description>
+            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.2.0/Lincoln-1.2.0.zip" length="3154647" type="application/octet-stream" sparkle:edSignature="rrCeUKtHZxEhHdt9UVwl5vVCk7Fa8u/OeojgKMbQeNqd2ZCOJWDKpQ6y7kRZAaEvKLvmHTzl54JLUZLYvAr6DA=="/>
+        </item>
+        <item>
             <title>1.1.0</title>
             <pubDate>Fri, 18 Sep 2026 22:02:31 -0400</pubDate>
             <sparkle:version>1.1.0</sparkle:version>
@@ -35,22 +50,6 @@
 </ul>
 ]]></description>
             <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.4/Lincoln-1.0.4.zip" length="2823830" type="application/octet-stream" sparkle:edSignature="iKoF565Bis9v1OFzfC1468EuZ0d/WSrQfqNxt5pKKkB2YorhcAKLYk6Oor5mh0MZzl6iWCc6Asbi4DsWH8wECQ=="/>
-        </item>
-        <item>
-            <title>1.0.3</title>
-            <pubDate>Fri, 18 Sep 2026 20:10:34 -0400</pubDate>
-            <sparkle:version>1.0.3</sparkle:version>
-            <sparkle:shortVersionString>1.0.3</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[<h2>Lincoln 1.0.3</h2>
-<p>Lincoln 1.0.3 moves diagnostics out of the editor into a Get Info window.</p>
-<ul>
-  <li><strong>Get Info</strong> (&#8984;I, also in the tunnel's &hellip; menu): a window per tunnel with the live status &mdash; state, control master pid, socket path and whether terminal sessions share it, forwards inherited from ssh config, last check and launch &mdash; plus the exact commands: the control master command, the terminal session command and the ssh_config snippet, each with a copy button.</li>
-  <li><strong>Leaner editor</strong>: the Status and Command preview sections and the reconnect help text are gone from the Configure form.</li>
-  <li><strong>&hellip; menu and Tunnel menu</strong>: Copy ssh Command (&#8679;&#8984;C) and Copy ssh_config Snippet live there now; the header button is removed.</li>
-</ul>
-]]></description>
-            <enclosure url="https://github.com/binoio/lincoln/releases/download/v1.0.3/Lincoln-1.0.3.zip" length="2802178" type="application/octet-stream" sparkle:edSignature="45JmcIwSfPEuNzNSbQpDULVVJ6UkZpENOSQ6rdm1oi2/ZFMDaUCtuuhYO1//bickD5VrRjXmeczoFc+2vSsUCA=="/>
         </item>
     </channel>
 </rss>
